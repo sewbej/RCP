@@ -61,7 +61,7 @@
         let isReturnAction = false;
 
         function updateRowCounter() {
-            const logs = JSON.parse(localStorage.getItem('skanerInteligentny')) || [];
+            const logs = JSON.parse(localStorage.getItem('RCP')) || [];
             const countElement = document.getElementById('row-count');
             const displayElement = document.getElementById('counter-display');
             
@@ -90,18 +90,18 @@
             currentCode = decodedText;
             currentFullDate = new Date();
             
-            let logs = JSON.parse(localStorage.getItem('skanerInteligentny')) || [];
+            let logs = JSON.parse(localStorage.getItem('RCP')) || [];
             let lastEntry = [...logs].reverse().find(log => log.kod === currentCode);
             
             const badge = document.getElementById('detected-action');
             
             if (lastEntry && lastEntry.powrotRaw === null) {
                 isReturnAction = true;
-                badge.innerText = "POWRÓT";
+                badge.innerText = "ZAKOŃCZENIE";
                 badge.className = "status-badge status-return";
             } else {
                 isReturnAction = false;
-                badge.innerText = "WYJŚCIE";
+                badge.innerText = "ROZPOCZĘCIE";
                 badge.className = "status-badge status-exit";
             }
 
@@ -112,7 +112,7 @@
         }
 
         document.getElementById('saveBtn').addEventListener('click', () => {
-            let logs = JSON.parse(localStorage.getItem('skanerInteligentny')) || [];
+            let logs = JSON.parse(localStorage.getItem('RCP')) || [];
 
             // 1. ZAPIS DO GOOGLE SHEETS
             // Formatujemy datę do zapisu w arkuszu (np. "2023-10-27 14:30:00")
@@ -155,7 +155,7 @@
                 });
             }
 
-            localStorage.setItem('skanerInteligentny', JSON.stringify(logs));
+            localStorage.setItem('RCP', JSON.stringify(logs));
             
             // Wracamy do skanera
             startScanner();
@@ -173,7 +173,7 @@
         }
 
         document.getElementById('reportBtn').addEventListener('click', () => {
-            let logs = JSON.parse(localStorage.getItem('skanerInteligentny'));
+            let logs = JSON.parse(localStorage.getItem('RCP'));
             if (!logs || logs.length === 0) {
                 alert("Brak danych w rejestrze.");
                 return;
@@ -181,9 +181,9 @@
 
             const excelData = logs.map(log => ({
                 "Imię i Nazwisko": log.kod,
-                "wyjście": log.wyjscieFormat,
-                "powrót": log.powrotFormat,
-                "czas trwania": calculateDuration(log.wyjscieRaw, log.powrotRaw)
+                "ROZPOCZĘCIE": log.wyjscieFormat,
+                "ZAKOŃCZENIE": log.powrotFormat,
+                "czas pracy": calculateDuration(log.wyjscieRaw, log.powrotRaw)
             }));
 
             const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -197,7 +197,7 @@
 
         document.getElementById('clearBtn').addEventListener('click', () => {
             if (confirm("Czy na pewno wyczyścić całą pamięć? Wszystkie wpisy zostaną usunięte z urządzenia (ale zostaną w Arkuszu Google).")) {
-                localStorage.removeItem('skanerInteligentny');
+                localStorage.removeItem('RCP');
                 updateRowCounter();
             }
         });

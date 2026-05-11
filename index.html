@@ -95,7 +95,7 @@
             
             const badge = document.getElementById('detected-action');
             
-            if (lastEntry && lastEntry.powrotRaw === null) {
+            if (lastEntry && lastEntry.zakonczenieRaw === null) {
                 isReturnAction = true;
                 badge.innerText = "ZAKOŃCZENIE";
                 badge.className = "status-badge status-return";
@@ -120,7 +120,7 @@
             
             let payload = {
                 kod: currentCode,
-                action: isReturnAction ? "powrot" : "wyjscie",
+                action: isReturnAction ? "zakonczenie" : "rozpoczecie",
                 datetime: formattedDate
             };
 
@@ -136,22 +136,22 @@
                 console.error("Błąd wysyłania do Google Sheets:", err);
             });
 
-            // 2. ZAPIS DO PAMIĘCI LOKALNEJ (Dzięki temu mechanizm wyjść/powrotów działa błyskawicznie)
+            // 2. ZAPIS DO PAMIĘCI LOKALNEJ (Dzięki temu mechanizm wyjść/zakonczenieów działa błyskawicznie)
             if (isReturnAction) {
                 for (let i = logs.length - 1; i >= 0; i--) {
-                    if (logs[i].kod === currentCode && logs[i].powrotRaw === null) {
-                        logs[i].powrotRaw = currentFullDate.toISOString();
-                        logs[i].powrotFormat = currentFullDate.toLocaleTimeString('pl-PL');
+                    if (logs[i].kod === currentCode && logs[i].zakonczenieRaw === null) {
+                        logs[i].zakonczenieRaw = currentFullDate.toISOString();
+                        logs[i].zakonczenieFormat = currentFullDate.toLocaleTimeString('pl-PL');
                         break;
                     }
                 }
             } else {
                 logs.push({
                     kod: currentCode,
-                    wyjscieRaw: currentFullDate.toISOString(),
-                    wyjscieFormat: currentFullDate.toLocaleTimeString('pl-PL'),
-                    powrotRaw: null,
-                    powrotFormat: ""
+                    rozpoczecieRaw: currentFullDate.toISOString(),
+                    rozpoczecieFormat: currentFullDate.toLocaleTimeString('pl-PL'),
+                    zakonczenieRaw: null,
+                    zakonczenieFormat: ""
                 });
             }
 
@@ -181,9 +181,9 @@
 
             const excelData = logs.map(log => ({
                 "Imię i Nazwisko": log.kod,
-                "ROZPOCZĘCIE": log.wyjscieFormat,
-                "ZAKOŃCZENIE": log.powrotFormat,
-                "czas pracy": calculateDuration(log.wyjscieRaw, log.powrotRaw)
+                "ROZPOCZĘCIE": log.rozpoczecieFormat,
+                "ZAKOŃCZENIE": log.zakonczenieFormat,
+                "czas pracy": calculateDuration(log.rozpoczecieRaw, log.zakonczenieRaw)
             }));
 
             const worksheet = XLSX.utils.json_to_sheet(excelData);

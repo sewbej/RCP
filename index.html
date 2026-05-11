@@ -147,7 +147,7 @@
         document.getElementById('cancelManualBtn').addEventListener('click', startScanner);
 
         document.getElementById('confirmManualBtn').addEventListener('click', () => {
-            const name = document.getElementById('manual-name').value.trim();
+            const name = document.getElementById('manual-name').value.trim().toUpperCase();
             const timeVal = document.getElementById('manual-time').value;
             
             if (!name || !timeVal) {

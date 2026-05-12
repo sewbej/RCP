@@ -150,6 +150,7 @@
         }
 
         function onScanSuccess(decodedText) {
+            playSuccessSound();
             html5QrcodeScanner.clear();
             processEntry(decodedText, new Date());
         }

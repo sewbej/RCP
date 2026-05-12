@@ -67,10 +67,10 @@
     <!-- Panel dolny -->
     <div class="section" id="bottom-controls">
         <button id="manualBtn">Wprowadź ręcznie</button>
-   <!--   <button id="reportBtn">Pobierz RCP EXCEL</button> -->
+   <!--   <button id="reportBtn">Pobierz RCP EXCEL</button> 
         
         <div id="counter-display"><span id="row-count">0</span></div>
-        <button id="clearBtn">Wyczyść całą pamięć</button>
+        <button id="clearBtn">Wyczyść całą pamięć</button>  -->
     </div>
 
     <script>
@@ -80,6 +80,27 @@
         let currentCode = "";
         let currentFullDate = null;
         let isReturnAction = false;
+
+        // --- FUNKCJA DŹWIĘKU ---
+        function playSuccessSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                oscillator.type = 'sine'; 
+                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // Częstotliwość dźwięku
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); // Głośność
+
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.1); // Czas trwania (0.1 sekundy)
+            } catch (e) {
+                console.log("Dźwięk nie mógł zostać odtworzony (brak interakcji lub wsparcia)");
+            }
+        }
 
         function updateRowCounter() {
             const logs = JSON.parse(localStorage.getItem('RCP')) || [];

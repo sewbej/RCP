@@ -265,12 +265,12 @@
             XLSX.writeFile(workbook, `RCP_${new Date().toLocaleDateString()}.xlsx`);
         });
 
-        document.getElementById('clearBtn').addEventListener('click', () => {
-            if (confirm("Wyczyścić pamięć?")) {
-                localStorage.removeItem('RCP');
-                updateRowCounter();
-            }
-        });
+      //  document.getElementById('clearBtn').addEventListener('click', () => {
+      //      if (confirm("Wyczyścić pamięć?")) {
+      //          localStorage.removeItem('RCP');
+      //          updateRowCounter();
+      //      }
+      //  });
 
         window.onload = startScanner;
     </script>

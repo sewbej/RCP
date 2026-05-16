@@ -30,6 +30,14 @@
         #manualBtn { background-color: #5f6368; color: white; }
         #cancelManualBtn { background-color: #f1f3f4; color: #3c4043; margin-top: 58px; padding: 8px; font-size: 0.9em;}
         #confirmManualBtn { background-color: #1a73e8; color: white; }
+#goToPreviewBtn { 
+    background-color: #0f9d58; /* Zielony kolor Google */
+    color: white; 
+    margin-top: 8px; 
+}
+#goToPreviewBtn:active { 
+    transform: scale(0.95); 
+}
 
         input { width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #dadce0; border-radius: 8px; font-size: 18px; box-sizing: border-box; }
         label { display: block; text-align: left; margin-top: 10px; color: #5f6368; font-weight: bold; }
@@ -67,7 +75,9 @@
     <!-- Panel dolny -->
     <div class="section" id="bottom-controls">
         <button id="manualBtn">Wprowadź ręcznie</button>
-    <!--  <button id="reportBtn">Pobierz RCP EXCEL</button> -->
+        <button id="goToPreviewBtn" onclick="window.location.href='odczyt.html'">Pokaż przepracowane godziny</button>
+        <button id="goToPreviewBtn" onclick="window.location.href='ostatnie.html'">Pokaż ostatnie</button>
+        <button id="reportBtn">Pobierz RCP EXCEL</button>
         
         <div id="counter-display"><span id="row-count">0</span></div>
      <!--   <button id="clearBtn">Wyczyść całą pamięć</button>  -->
@@ -238,29 +248,29 @@
             return [h, m, s].map(v => v < 10 ? "0" + v : v).join(":");
         }
 
-     //   document.getElementById('reportBtn').addEventListener('click', () => {
-     //       let logs = JSON.parse(localStorage.getItem('RCP'));
-     //       if (!logs || logs.length === 0) { alert("Brak danych."); return; }
+        document.getElementById('reportBtn').addEventListener('click', () => {
+            let logs = JSON.parse(localStorage.getItem('RCP'));
+            if (!logs || logs.length === 0) { alert("Brak danych."); return; }
 
-     //       const excelData = logs.map(log => ({
-     //           "Imię i Nazwisko": log.kod,
-     //           "ROZPOCZĘCIE": log.rozpoczecieFormat,
-     //           "ZAKOŃCZENIE": log.zakonczenieFormat,
-     //           "czas pracy": calculateDuration(log.rozpoczecieRaw, log.zakonczenieRaw)
-     //       }));
+            const excelData = logs.map(log => ({
+                "Imię i Nazwisko": log.kod,
+                "ROZPOCZĘCIE": log.rozpoczecieFormat,
+                "ZAKOŃCZENIE": log.zakonczenieFormat,
+                "czas pracy": calculateDuration(log.rozpoczecieRaw, log.zakonczenieRaw)
+            }));
 
-     //       const worksheet = XLSX.utils.json_to_sheet(excelData);
-     //       const workbook = XLSX.utils.book_new();
-     //       XLSX.utils.book_append_sheet(workbook, worksheet, "Rejestr");
-     //       XLSX.writeFile(workbook, `RCP_${new Date().toLocaleDateString()}.xlsx`);
-     //   });
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Rejestr");
+            XLSX.writeFile(workbook, `RCP_${new Date().toLocaleDateString()}.xlsx`);
+        });
 
-      //  document.getElementById('clearBtn').addEventListener('click', () => {
-      //      if (confirm("Wyczyścić pamięć?")) {
-      //          localStorage.removeItem('RCP');
-      //          updateRowCounter();
-      //      }
-      //  });
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            if (confirm("Wyczyścić pamięć?")) {
+                localStorage.removeItem('RCP');
+                updateRowCounter();
+            }
+        });
 
         window.onload = startScanner;
     </script>

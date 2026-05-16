@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RCP - Ostatnie Wpisy</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; padding: 15px; max-width: 600px; margin: auto; background-color: #f0f2f5; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #1a73e8; margin-top: 0; }
+        
+        button { width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+        .btn-refresh { background-color: #1a73e8; color: white; }
+        button:active { transform: scale(0.98); }
+        button:disabled { background-color: #ccc; }
+
+        #loader { text-align: center; margin: 20px 0; color: #1a73e8; font-weight: bold; }
+        
+        .results-container { margin-top: 25px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; font-size: 14px; }
+        th { background-color: #f8f9fa; color: #5f6368; font-weight: bold; padding: 12px; border-bottom: 2px solid #eee; text-align: left; }
+        td { padding: 12px; border-bottom: 1px solid #eee; color: #3c4043; }
+        tr:last-child td { border-bottom: none; }
+        .no-data { text-align: center; padding: 20px; color: #999; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>30 Ostatnich Wpisów</h2>
+        
+        <button class="btn-refresh" id="refreshBtn" onclick="fetchRecentEntries()">ODŚWIEŻ LISTĘ</button>
+        
+        <div id="loader">Pobieranie danych z arkusza...</div>
+
+        <div id="results" class="results-container">
+            <!-- Tabela wygeneruje się tutaj automatycznie -->
+        </div>
+
+    </div>
+
+    <script>
+        // --- TU WKLEJ SWÓJ LINK DO GOOGLE SCRIPT ---
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfA6Ia_OP-gA1t5-COIvBSXN5IKrO3T9nFOQlY3z3zjg7j5iW4cFE9eOKqRILWfok/exec";
+
+        async function fetchRecentEntries() {
+            const btn = document.getElementById('refreshBtn');
+            const loader = document.getElementById('loader');
+            const resultsDiv = document.getElementById('results');
+
+            btn.disabled = true;
+            loader.style.display = "block";
+            resultsDiv.innerHTML = "";
+
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ action: "get_recent" })
+                });
+                
+                const data = await response.json();
+
+                if (data.length === 0) {
+                    resultsDiv.innerHTML = '<div class="no-data">Brak jakichkolwiek wpisów w arkuszu.</div>';
+                } else {
+                    let html = `<table>
+                        <thead>
+                            <tr>
+                                <th>Nazwisko</th>
+                                <th>Start</th>
+                                <th>Koniec</th>
+                                <th>Czas</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                    
+                    data.forEach(row => {
+                        html += `<tr>
+                            <td style="font-weight: bold; color: #1a73e8;">${row.nazwisko}</td>
+                            <td>${row.rozpoczecie}</td>
+                            <td>${row.zakonczenie}</td>
+                            <td>${row.czas}</td>
+                        </tr>`;
+                    });
+
+                    html += '</tbody></table>';
+                    resultsDiv.innerHTML = html;
+                }
+            } catch (error) {
+                console.error(error);
+                resultsDiv.innerHTML = '<div class="no-data" style="color: red;">Błąd połączenia ze skryptem Google.</div>';
+            } finally {
+                btn.disabled = false;
+                loader.style.display = "none";
+            }
+        }
+
+        // Automatyczne ładowanie danych po otwarciu strony
+        window.onload = fetchRecentEntries;
+    </script>
+</body>
+</html>

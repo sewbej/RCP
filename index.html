@@ -61,7 +61,10 @@
     <!-- Panel po zeskanowaniu / wpisaniu -->
     <div id="action-section" class="section hidden">
         <div class="data-row"><span id="result-display" class="highlight"></span></div>
-        <div class="data-row">Godzina: <span id="time-display" class="highlight"></span></div>
+        <div class="data-row" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+    <span>Godzina:</span>
+    <input type="time" id="time-display" class="highlight" style="width: auto; margin-top: 0; padding: 5px 10px; text-align: center;">
+</div>
         <div id="detected-action" class="status-badge"></div>
         
         <button id="saveBtn">Zatwierdź</button>
@@ -146,7 +149,9 @@
             }
 
             document.getElementById('result-display').innerText = currentCode;
-            document.getElementById('time-display').innerText = currentFullDate.toLocaleTimeString('pl-PL', {hour: '2-digit', minute:'2-digit'});
+            const hours = currentFullDate.getHours().toString().padStart(2, '0');
+const minutes = currentFullDate.getMinutes().toString().padStart(2, '0');
+document.getElementById('time-display').value = `${hours}:${minutes}`;
             
             document.getElementById('reader').classList.add('hidden');
             document.getElementById('manual-section').classList.add('hidden');
@@ -192,6 +197,11 @@
         });
 
         document.getElementById('saveBtn').addEventListener('click', () => {
+const editedTime = document.getElementById('time-display').value; // Pobiera "HH:MM"
+    if (editedTime) {
+        const [newHours, newMinutes] = editedTime.split(':');
+        currentFullDate.setHours(parseInt(newHours), parseInt(newMinutes), 0);
+    }
             let logs = JSON.parse(localStorage.getItem('RCP')) || [];
             let formattedDate = currentFullDate.toLocaleDateString('pl-PL') + " " + currentFullDate.toLocaleTimeString('pl-PL');
             

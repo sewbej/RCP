@@ -19,7 +19,7 @@
         .status-exit { background: #e8f0fe; color: #1967d2; }
         .status-return { background: #e6f4ea; color: #137333; }
         
-        button { width: 100%; padding: 16px; margin-top: 12px; font-size: 22px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        button { width: 100%; padding: 16px; margin-top: 12px; margin-bottom: 32px; font-size: 22px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; }
         #saveBtn { background-color: #1a73e8; color: white; box-shadow: 0 2px 6px rgba(26,115,232,0.4); }
         #reportBtn { background-color: #34a853; color: white; margin-top: 30px; }
         
@@ -31,8 +31,8 @@
         #cancelManualBtn { background-color: #f1f3f4; color: #3c4043; margin-top: 58px; padding: 8px; font-size: 0.9em;}
         #confirmManualBtn { background-color: #1a73e8; color: white; }
 #goToPreviewBtn { 
-    background-color: #0f9d58; /* Zielony kolor Google */
-    color: white; 
+    background-color: #fbbc04; /* Zielony kolor Google */
+    color: #000; 
     margin-top: 8px; 
 }
 #goToPreviewBtn:active { 
@@ -76,8 +76,8 @@
     <div class="section" id="bottom-controls">
         <button id="manualBtn">Wprowadź ręcznie</button>
         <button id="goToPreviewBtn" onclick="window.location.href='odczyt.html'">Pokaż przepracowane godziny</button>
-        <button id="goToPreviewBtn" onclick="window.location.href='ostatnie.html'">Pokaż ostatnie</button>
-        <button id="reportBtn">Pobierz RCP EXCEL</button>
+        <button id="goToPreviewBtn" onclick="window.location.href='ostatnie.html'">Pokaż ostatnie 30 wpisów</button>
+     <!--   <button id="reportBtn">Pobierz RCP EXCEL</button>-->
         
         <div id="counter-display"><span id="row-count">0</span></div>
      <!--   <button id="clearBtn">Wyczyść całą pamięć</button>  -->
@@ -248,22 +248,22 @@
             return [h, m, s].map(v => v < 10 ? "0" + v : v).join(":");
         }
 
-        document.getElementById('reportBtn').addEventListener('click', () => {
-            let logs = JSON.parse(localStorage.getItem('RCP'));
-            if (!logs || logs.length === 0) { alert("Brak danych."); return; }
+      //  document.getElementById('reportBtn').addEventListener('click', () => {
+      //      let logs = JSON.parse(localStorage.getItem('RCP'));
+      //      if (!logs || logs.length === 0) { alert("Brak danych."); return; }
 
-            const excelData = logs.map(log => ({
-                "Imię i Nazwisko": log.kod,
-                "ROZPOCZĘCIE": log.rozpoczecieFormat,
-                "ZAKOŃCZENIE": log.zakonczenieFormat,
-                "czas pracy": calculateDuration(log.rozpoczecieRaw, log.zakonczenieRaw)
-            }));
+      //      const excelData = logs.map(log => ({
+       //         "Imię i Nazwisko": log.kod,
+       //         "ROZPOCZĘCIE": log.rozpoczecieFormat,
+       //         "ZAKOŃCZENIE": log.zakonczenieFormat,
+       //         "czas pracy": calculateDuration(log.rozpoczecieRaw, log.zakonczenieRaw)
+       //     }));
 
-            const worksheet = XLSX.utils.json_to_sheet(excelData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Rejestr");
-            XLSX.writeFile(workbook, `RCP_${new Date().toLocaleDateString()}.xlsx`);
-        });
+       //     const worksheet = XLSX.utils.json_to_sheet(excelData);
+       //     const workbook = XLSX.utils.book_new();
+       //     XLSX.utils.book_append_sheet(workbook, worksheet, "Rejestr");
+       //     XLSX.writeFile(workbook, `RCP_${new Date().toLocaleDateString()}.xlsx`);
+       // });
 
       //  document.getElementById('clearBtn').addEventListener('click', () => {
       //      if (confirm("Wyczyścić pamięć?")) {

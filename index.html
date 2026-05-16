@@ -27,17 +27,12 @@
         .has-data { color: #1a73e8 !important; font-weight: bold; }
 
         #clearBtn { background-color: #ea4335; color: white; margin-top: 8px; opacity: 0.8;padding: 8px; font-size: 0.7em}
-        #manualBtn { background-color: #5f6368; color: white; }
-        #cancelManualBtn { background-color: #f1f3f4; color: #3c4043; margin-top: 58px; padding: 8px; font-size: 0.9em;}
+        #manualBtn { background-color: #1a73e8; color: white; }
+        #cancelManualBtn { background-color: #d1d3d4; color: #3c4043; margin-top: 58px; padding: 8px; font-size: 0.9em;}
         #confirmManualBtn { background-color: #1a73e8; color: white; }
-#goToPreviewBtn { 
-    background-color: #fbbc04; /* Zielony kolor Google */
-    color: #000; 
-    margin-top: 8px; 
-}
-#goToPreviewBtn:active { 
-    transform: scale(0.95); 
-}
+#goToPreviewBtn {     background-color: #fbbc04;     color: #000;     margin-top: 8px; }
+#goToHistoryBtn {     background-color: #5fc400;     color: #000;     margin-top: 8px; }
+
 
         input { width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #dadce0; border-radius: 8px; font-size: 18px; box-sizing: border-box; }
         label { display: block; text-align: left; margin-top: 10px; color: #5f6368; font-weight: bold; }
@@ -75,8 +70,8 @@
     <!-- Panel dolny -->
     <div class="section" id="bottom-controls">
         <button id="manualBtn">Wprowadź ręcznie</button>
-        <button id="goToPreviewBtn" onclick="window.location.href='odczyt.html'">Pokaż przepracowane godziny</button>
-        <button id="goToPreviewBtn" onclick="window.location.href='ostatnie.html'">Pokaż ostatnie 30 wpisów</button>
+        <button id="goToHistoryBtn" onclick="window.location.href='odczyt.html'">Pokaż przepracowane godziny</button>
+        <button id="goToPreviewBtn" onclick="window.location.href='ostatnie.html'">Pokaż ostatnie wpisy</button>
      <!--   <button id="reportBtn">Pobierz RCP EXCEL</button>-->
         
         <div id="counter-display"><span id="row-count">0</span></div>

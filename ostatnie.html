@@ -61,27 +61,41 @@
                 
                 const data = await response.json();
 
-                if (data.length === 0) {
+if (data.length === 0) {
                     resultsDiv.innerHTML = '<div class="no-data">Brak jakichkolwiek wpisów w arkuszu.</div>';
                 } else {
+                    // Dodaliśmy nagłówek "Data"
                     let html = `<table>
                         <thead>
                             <tr>
-                                <th>nazwisko</th>
-                                <th>rozpoczęcie</th>
-                                <th>zakończenie</th>
-                                <th>czas pracy</th>
+                                <th>Nazwisko</th>
+                                <th>Data</th>
+                                <th>Start</th>
+                                <th>Koniec</th>
+                                <th>Czas</th>
                             </tr>
                         </thead>
                         <tbody>`;
                     
+                    // Zestaw do śledzenia unikalnych połączeń: pracownik + data
+                    const wyswietloneWpisy = new Set();
+
                     data.forEach(row => {
-                        html += `<tr>
-                            <td style="font-weight: normal; color: #000;">${row.nazwisko}</td>
-                            <td>${row.rozpoczecie}</td>
-                            <td>${row.zakonczenie}</td>
-                            <td>${row.czas}</td>
-                        </tr>`;
+                        // Tworzymy unikalny klucz, np. "jan kowalski_17.05.2026"
+                        const kluczDnia = `${row.nazwisko.trim().toLowerCase()}_${row.data}`;
+
+                        // Jeśli to połączenie nazwiska i daty pojawia się PIERWSZY raz (czyli jest najnowsze)
+                        if (!wyswietloneWpisy.has(kluczDnia)) {
+                            wyswietloneWpisy.add(kluczDnia); // Blokujemy ten dzień dla tego pracownika
+
+                            html += `<tr>
+                                <td style="font-weight: bold; color: #1a73e8;">${row.nazwisko}</td>
+                                <td>${row.data}</td>
+                                <td>${row.rozpoczecie}</td>
+                                <td>${row.zakonczenie}</td>
+                                <td>${row.czas}</td>
+                            </tr>`;
+                        }
                     });
 
                     html += '</tbody></table>';

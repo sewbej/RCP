@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RCP - Ostatnie Wpisy</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; padding: 5px; max-width: 600px; margin: auto; background-color: #ffffff; }
+        body { font-family: 'Segoe UI', sans-serif; padding: 5px; max-width: 700px; margin: auto; background-color: #ffffff; }
         .card { background: white; padding: 6px; border-radius: 12px; box-shadow: 0 0 1px 1px rgba(0,0,0,0.6); }
         h5 { text-align: center; color: #000; margin: 0; }
         
@@ -18,9 +18,9 @@
         
         .results-container { margin-top: 5px; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; font-size: 16px; }
-        th { background-color: #ffffff; color: #000000; font-weight: bold; padding-top: 6px; border-bottom: 1px solid #888; text-align: center; font-size: 14px;}
-        td { padding: 2px; border-bottom: 1px solid #888; color: #333; text-align: center;}
-        tr:last-child td { border-bottom: none; }
+        th { background-color: #ffffff; color: #000000; font-weight: bold; padding-top: 6px; border-bottom: 1px solid #444; text-align: center; font-size: 14px;}
+        td { padding: 2px; border-bottom: 1px solid #444; border-left: 1px solid #ccc; color: #000; text-align: center;}
+        tr:last-child, td:last-child { border-right: 1px solid #ccc; }
         .no-data { text-align: center; padding: 20px; color: #999; }
     </style>
 </head>
@@ -89,7 +89,7 @@ if (data.length === 0) {
                             wyswietloneWpisy.add(kluczDnia); // Blokujemy ten dzień dla tego pracownika
 
                             html += `<tr>
-                                <td style="font-weight: bold; color: #1a73e8;">${row.nazwisko}</td>
+                                <td style="font-weight: normal; color: #000;text-align: left">${row.nazwisko}</td>
                                 <td>${row.data}</td>
                                 <td>${row.rozpoczecie}</td>
                                 <td>${row.zakonczenie}</td>

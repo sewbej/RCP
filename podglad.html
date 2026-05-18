@@ -32,9 +32,10 @@
         
         
 <label>Imię i Nazwisko</label>
-<div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
-    <input type="text" id="nameInput" placeholder="Wpisz swoje dane" style="margin-top: 0; flex: 1;">
-    <button id="listBtn" onclick="openEmployeeList()" style="width: auto; margin-top: 0; padding: 12px 15px; background-color: #34a853; font-size: 14px; white-space: nowrap;">Lista osób</button>
+<div style="display: flex; gap: 10px; align-items: center; margin-top: 5px; flex-wrap: wrap;">
+    <input type="text" id="nameInput" placeholder="Wpisz swoje dane" style="margin-top: 0; flex: 1; min-width: 150px;">
+    <button id="listBtn" onclick="openEmployeeList()" style="width: auto; margin-top: 0; padding: 6px 15px; font-size: 14px; white-space: nowrap;">Lista osób</button>
+    <button id="reportBtn" onclick="openMonthlyReport()" style="width: auto; margin-top: 0; padding: 6px 15px; font-size: 14px; white-space: nowrap;">Raport miesięczny</button>
 </div>
 
         <div style="display: flex; gap: 8px;">
@@ -167,6 +168,11 @@ function openEmployeeList() {
     const year = document.getElementById('yearInput').value;
     // Otwiera lista.html w nowej karcie i przekazuje parametry
     window.open(`lista.html?miesiac=${encodeURIComponent(month)}&rok=${encodeURIComponent(year)}`, '_blank');
+}
+function openMonthlyReport() {
+    const month = document.getElementById('monthSelect').value;
+    const year = document.getElementById('yearInput').value;
+    window.open(`raport.html?miesiac=${encodeURIComponent(month)}&rok=${encodeURIComponent(year)}`, '_blank');
 }
     </script>
 </body>

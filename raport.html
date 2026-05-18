@@ -3,30 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lista Pracowników</title>
+    <title>Raport Miesięczny RCP</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; padding: 5px; max-width: 500px; margin: auto; background-color: #f0f2f5; }
+        body { font-family: 'Segoe UI', sans-serif; padding: 15px; max-width: 700px; margin: auto; background-color: #f0f2f5; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #000; margin-top: 0; }
         h3 { text-align: center; color: #000; margin-top: -10px; font-weight: normal; }
         
         #loader { text-align: center; margin: 20px 0; color: #000; font-weight: bold; }
         
-        .results-container { margin-top: 20px; }
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; font-size: 15px; }
-        th { background-color: #f8f9fa; color: #5f6368; font-weight: bold; padding: 6px; border-bottom: 2px solid #eee; text-align: left; }
-        td { padding: 6px; border-bottom: 1px solid #eee; color: #3c4043; }
-        tr:last-child td { border-bottom: none; }
+        .results-container { margin-top: 25px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; font-size: 16px; }
+        th { background-color: #ffffff; color: #000000; font-weight: bold; padding-top: 6px; border-bottom: 1px solid #444; text-align: center; font-size: 14px;}
+        td { padding: 2px; border-bottom: 1px solid #444; border-left: 1px solid #ccc; color: #000; text-align: center;}
+        tr:last-child, td:last-child { border-right: 1px solid #ccc; }
         .no-data { text-align: center; padding: 20px; color: #999; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h2>Pracownicy w arkuszu</h2>
         <h3 id="periodDisplay">Pobieranie okresu...</h3>
         
-        <div id="loader">Generowanie listy osób...</div>
+        <div id="loader">Generowanie raportu...</div>
 
         <div id="results" class="results-container">
             <!-- Tabela wygeneruje się automatycznie -->
@@ -42,13 +40,13 @@
         const miesiac = urlParams.get('miesiac');
         const rok = urlParams.get('rok');
 
-        async function fetchEmployeeList() {
+        async function fetchMonthlyReport() {
             const loader = document.getElementById('loader');
             const resultsDiv = document.getElementById('results');
             const periodDisplay = document.getElementById('periodDisplay');
 
             if (!miesiac || !rok) {
-                resultsDiv.innerHTML = '<div class="no-data" style="color: red;">Błąd: Nie przekazano okresu w adresie URL.</div>';
+                resultsDiv.innerHTML = '<div class="no-data" style="color: red;">Błąd: Brak zdefiniowanego okresu.</div>';
                 loader.style.display = "none";
                 return;
             }
@@ -60,32 +58,49 @@
                     method: "POST",
                     headers: { "Content-Type": "text/plain;charset=utf-8" },
                     body: JSON.stringify({
-                        action: "get_employee_list",
+                        action: "get_month_data",
                         miesiac: miesiac,
                         rok: rok
                     })
                 });
                 
-                const data = await response.json(); // Tablica unikalnych nazwisk
+                const data = await response.json();
 
                 if (data.length === 0) {
-                    resultsDiv.innerHTML = `<div class="no-data">W miesiącu ${miesiac} ${rok} nikt nie rejestrował czasu pracy.</div>`;
+                    resultsDiv.innerHTML = `<div class="no-data">Brak danych RCP za okres: ${miesiac} ${rok}.</div>`;
                 } else {
                     let html = `<table>
                         <thead>
                             <tr>
-                                <th style="width: 50px;">Lp.</th>
-                                <th>Imię i Nazwisko</th>
+                                <th>Nazwisko</th>
+                                <th>Data</th>
+                                <th>Start</th>
+                                <th>Koniec</th>
+                                <th>Czas</th>
                             </tr>
                         </thead>
                         <tbody>`;
                     
-                    data.forEach((nazwisko, index) => {
-                        html += `<tr>
-                            <td style="color: #999;">${index + 1}.</td>
-                            <td style="font-weight: bold; color: #202124;">${nazwisko}</td>
-                        </tr>`;
-                    });
+// Zestaw do śledzenia unikalnych połączeń: pracownik + data w danym miesiącu
+const wyswietloneWpisy = new Set();
+
+data.forEach(row => {
+    // Tworzymy unikalny klucz unikalności, np. "jan kowalski_18.05.2026"
+    const kluczDnia = `${row.nazwisko.trim().toLowerCase()}_${row.data}`;
+
+    // Jeśli to połączenie nazwiska i daty pojawia się PIERWSZY raz (czyli jest najnowsze)
+    if (!wyswietloneWpisy.has(kluczDnia)) {
+        wyswietloneWpisy.add(kluczDnia); // Blokujemy ten dzień dla tego pracownika, ignorując starsze duplikaty
+
+        html += `<tr>
+            <td style="font-weight: normal; color: #000;text-align: left">${row.nazwisko}</td>
+            <td>${row.data}</td>
+            <td>${row.rozpoczecie}</td>
+            <td>${row.zakonczenie}</td>
+            <td>${row.czas}</td>
+        </tr>`;
+    }
+});
 
                     html += '</tbody></table>';
                     resultsDiv.innerHTML = html;
@@ -98,8 +113,7 @@
             }
         }
 
-        // Uruchomienie funkcji od razu po wejściu na stronę
-        window.onload = fetchEmployeeList;
+        window.onload = fetchMonthlyReport;
     </script>
 </body>
 </html>

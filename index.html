@@ -203,7 +203,7 @@ const editedTime = document.getElementById('time-display').value; // Pobiera "HH
         currentFullDate.setHours(parseInt(newHours), parseInt(newMinutes), 0);
     }
             let logs = JSON.parse(localStorage.getItem('RCP')) || [];
-            let formattedDate = currentFullDate.toLocaleDateString('pl-PL') + " " + currentFullDate.toLocaleTimeString('pl-PL');
+            let formattedDate = currentFullDate.toLocaleDateString('pl-PL') + " " + currentFullDate.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
             
             let payload = {
                 kod: currentCode,

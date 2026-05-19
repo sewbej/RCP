@@ -81,233 +81,194 @@
      <!--   <button id="clearBtn">Wyczyść całą pamięć</button>  -->
     </div>
 
-    <script>
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfA6Ia_OP-gA1t5-COIvBSXN5IKrO3T9nFOQlY3z3zjg7j5iW4cFE9eOKqRILWfok/exec";
+<script>
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfA6Ia_OP-gA1t5-COIvBSXN5IKrO3T9nFOQlY3z3zjg7j5iW4cFE9eOKqRILWfok/exec";
 
-        let html5QrcodeScanner;
-        let currentCode = "";
-        let currentFullDate = null;
-        let isReturnAction = false;
+    let html5QrcodeScanner;
+    let currentCode = "";
+    let currentFullDate = null;
+    let isReturnAction = false;
 
-        // --- FUNKCJA DŹWIĘKU ---
-        function playSuccessSound() {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-
-                oscillator.type = 'sine'; 
-                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // Częstotliwość dźwięku
-                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); // Głośność
-
-                oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.1); // Czas trwania (0.1 sekundy)
-            } catch (e) {
-                console.log("Dźwięk nie mógł zostać odtworzony (brak interakcji lub wsparcia)");
-            }
+    // --- FUNKCJA DŹWIĘKU ---
+    function playSuccessSound() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.type = 'sine'; 
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.1);
+        } catch (e) {
+            console.log("Dźwięk nie mógł zostać odtworzony");
         }
-
-        function updateRowCounter() {
-            const logs = JSON.parse(localStorage.getItem('RCP')) || [];
-            document.getElementById('row-count').innerText = logs.length;
-            const displayElement = document.getElementById('counter-display');
-            logs.length > 0 ? displayElement.classList.add('has-data') : displayElement.classList.remove('has-data');
-        }
-
-        function startScanner() {
-            document.getElementById('action-section').classList.add('hidden');
-            document.getElementById('manual-section').classList.add('hidden');
-            document.getElementById('bottom-controls').classList.remove('hidden');
-            document.getElementById('reader').classList.remove('hidden');
-            updateRowCounter();
-            
-            html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
-            html5QrcodeScanner.render(onScanSuccess);
-        }
-
-        // Wspólna funkcja dla skanera i wpisu ręcznego
-        function processEntry(name, dateObj) {
-            currentCode = name;
-            currentFullDate = dateObj;
-            
-            let logs = JSON.parse(localStorage.getItem('RCP')) || [];
-            let lastEntry = [...logs].reverse().find(log => log.kod === currentCode);
-            
-            const badge = document.getElementById('detected-action');
-            
-            if (lastEntry && lastEntry.zakonczenieRaw === null) {
-                isReturnAction = true;
-                badge.innerText = "ZAKOŃCZENIE";
-                badge.className = "status-badge status-return";
-            } else {
-                isReturnAction = false;
-                badge.innerText = "ROZPOCZĘCIE";
-                badge.className = "status-badge status-exit";
-            }
-
-            document.getElementById('result-display').innerText = currentCode;
-            const hours = currentFullDate.getHours().toString().padStart(2, '0');
-const minutes = currentFullDate.getMinutes().toString().padStart(2, '0');
-document.getElementById('time-display').value = `${hours}:${minutes}`;
-            
-            document.getElementById('reader').classList.add('hidden');
-            document.getElementById('manual-section').classList.add('hidden');
-            document.getElementById('action-section').classList.remove('hidden');
-            document.getElementById('bottom-controls').classList.add('hidden');
-        }
-
-        function onScanSuccess(decodedText) {
-            playSuccessSound();
-            html5QrcodeScanner.clear();
-            processEntry(decodedText, new Date());
-        }
-
-        // Obsługa przycisku "Wprowadź ręcznie"
-        document.getElementById('manualBtn').addEventListener('click', () => {
-            if(html5QrcodeScanner) html5QrcodeScanner.clear();
-            document.getElementById('reader').classList.add('hidden');
-            document.getElementById('bottom-controls').classList.add('hidden');
-            document.getElementById('manual-section').classList.remove('hidden');
-            
-            // Ustawienie domyślnego czasu na teraz
-            const now = new Date();
-            document.getElementById('manual-time').value = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
-        });
-
-        document.getElementById('cancelManualBtn').addEventListener('click', startScanner);
-
-        document.getElementById('confirmManualBtn').addEventListener('click', () => {
-            const name = document.getElementById('manual-name').value.trim().toUpperCase();
-            const timeVal = document.getElementById('manual-time').value;
-            
-            if (!name || !timeVal) {
-                alert("Proszę wypełnić oba pola.");
-                return;
-            }
-
-            // Tworzenie obiektu daty na podstawie dzisiejszego dnia i wpisanej godziny
-            const [hours, minutes] = timeVal.split(':');
-            const manualDate = new Date();
-            manualDate.setHours(parseInt(hours), parseInt(minutes), 0);
-
-            processEntry(name, manualDate);
-        });
-
-document.getElementById('saveBtn').addEventListener('click', async () => {
-    const btn = document.getElementById('saveBtn'); // Referencja do przycisku
-
-    // 1. Sprawdzenie połączenia przed wysłaniem
-    if (!navigator.onLine) {
-        alert("⚠️ Brak połączenia z internetem! Sprawdź sieć i spróbuj ponownie.");
-        return;
     }
 
-    // 2. Blokada przycisku (UI feedback)
-    btn.disabled = true;
-    btn.innerText = "Wysyłanie...";
-
-    // Logika czasu
-    const editedTime = document.getElementById('time-display').value;
-    if (editedTime) {
-        const [newHours, newMinutes] = editedTime.split(':');
-        currentFullDate.setHours(parseInt(newHours), parseInt(newMinutes), 0);
-    }
-    
-    let logs = JSON.parse(localStorage.getItem('RCP')) || [];
-    let formattedDate = currentFullDate.toLocaleDateString('pl-PL') + " " + currentFullDate.toLocaleTimeString('pl-PL');
-    
-    let payload = {
-        kod: currentCode,
-        action: isReturnAction ? "zakonczenie" : "rozpoczecie",
-        datetime: formattedDate
-    };
-
-    // 3. Próba wysyłki z obsługą błędów (try-catch)
-    try {
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify(payload)
-        });
-
-        // Jeśli serwer zwrócił błąd, wyrzuć wyjątek
-        if (!response.ok) throw new Error("Błąd serwera");
-
-        console.log("Wysłano do Google Sheets!");
-
-        // 4. Jeśli wysłano pomyślnie, aktualizujemy lokalne dane
-        if (isReturnAction) {
-            for (let i = logs.length - 1; i >= 0; i--) {
-                if (logs[i].kod === currentCode && logs[i].zakonczenieRaw === null) {
-                    logs[i].zakonczenieRaw = currentFullDate.toISOString();
-                    logs[i].zakonczenieFormat = currentFullDate.toLocaleTimeString('pl-PL');
-                    break;
-                }
-            }
-        } else {
-            logs.push({
-                kod: currentCode,
-                rozpoczecieRaw: currentFullDate.toISOString(),
-                rozpoczecieFormat: currentFullDate.toLocaleTimeString('pl-PL'),
-                zakonczenieRaw: null,
-                zakonczenieFormat: ""
-            });
-        }
-
-        localStorage.setItem('RCP', JSON.stringify(logs));
-        document.getElementById('manual-name').value = "";
-        startScanner();
-
-    } catch (err) {
-        // 5. Obsługa błędu - przywracamy przycisk, aby użytkownik mógł ponowić próbę
-        console.error("Błąd Arkusza:", err);
-        alert("❌ Błąd połączenia z serwerem. Dane nie zostały zapisane w arkuszu. Sprawdź internet i spróbuj jeszcze raz.");
-        
+    // --- FUNKCJA RESETUJĄCA PRZYCISK (NOWA) ---
+    function resetUI() {
+        const btn = document.getElementById('saveBtn');
         btn.disabled = false;
         btn.innerText = "Zatwierdź";
     }
-});
 
-        // Pozostałe funkcje Excela i czyszczenia bez zmian...
-        function calculateDuration(startISO, endISO) {
-            if (!startISO || !endISO) return "";
-            const start = new Date(startISO);
-            const end = new Date(endISO);
-            let diffSec = Math.floor((end - start) / 1000);
-            let h = Math.floor(diffSec / 3600);
-            let m = Math.floor((diffSec % 3600) / 60);
-            let s = diffSec % 60;
-            return [h, m, s].map(v => v < 10 ? "0" + v : v).join(":");
+    function updateRowCounter() {
+        const logs = JSON.parse(localStorage.getItem('RCP')) || [];
+        document.getElementById('row-count').innerText = logs.length;
+        const displayElement = document.getElementById('counter-display');
+        logs.length > 0 ? displayElement.classList.add('has-data') : displayElement.classList.remove('has-data');
+    }
+
+    function startScanner() {
+        document.getElementById('action-section').classList.add('hidden');
+        document.getElementById('manual-section').classList.add('hidden');
+        document.getElementById('bottom-controls').classList.remove('hidden');
+        document.getElementById('reader').classList.remove('hidden');
+        updateRowCounter();
+        
+        // Ważne: Sprawdzamy czy skaner już istnieje, jeśli tak - czyścimy go przed ponownym startem
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.clear().then(() => {
+                html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
+                html5QrcodeScanner.render(onScanSuccess);
+            });
+        } else {
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
+            html5QrcodeScanner.render(onScanSuccess);
+        }
+    }
+
+    function processEntry(name, dateObj) {
+        currentCode = name;
+        currentFullDate = dateObj;
+        
+        let logs = JSON.parse(localStorage.getItem('RCP')) || [];
+        let lastEntry = [...logs].reverse().find(log => log.kod === currentCode);
+        
+        const badge = document.getElementById('detected-action');
+        
+        if (lastEntry && lastEntry.zakonczenieRaw === null) {
+            isReturnAction = true;
+            badge.innerText = "ZAKOŃCZENIE";
+            badge.className = "status-badge status-return";
+        } else {
+            isReturnAction = false;
+            badge.innerText = "ROZPOCZĘCIE";
+            badge.className = "status-badge status-exit";
         }
 
-      //  document.getElementById('reportBtn').addEventListener('click', () => {
-      //      let logs = JSON.parse(localStorage.getItem('RCP'));
-      //      if (!logs || logs.length === 0) { alert("Brak danych."); return; }
+        document.getElementById('result-display').innerText = currentCode;
+        const hours = currentFullDate.getHours().toString().padStart(2, '0');
+        const minutes = currentFullDate.getMinutes().toString().padStart(2, '0');
+        document.getElementById('time-display').value = `${hours}:${minutes}`;
+        
+        document.getElementById('reader').classList.add('hidden');
+        document.getElementById('manual-section').classList.add('hidden');
+        document.getElementById('action-section').classList.remove('hidden');
+        document.getElementById('bottom-controls').classList.add('hidden');
+    }
 
-      //      const excelData = logs.map(log => ({
-       //         "Imię i Nazwisko": log.kod,
-       //         "ROZPOCZĘCIE": log.rozpoczecieFormat,
-       //         "ZAKOŃCZENIE": log.zakonczenieFormat,
-       //         "czas pracy": calculateDuration(log.rozpoczecieRaw, log.zakonczenieRaw)
-       //     }));
+    function onScanSuccess(decodedText) {
+        playSuccessSound();
+        // Clear scanneru
+        html5QrcodeScanner.clear();
+        processEntry(decodedText, new Date());
+    }
 
-       //     const worksheet = XLSX.utils.json_to_sheet(excelData);
-       //     const workbook = XLSX.utils.book_new();
-       //     XLSX.utils.book_append_sheet(workbook, worksheet, "Rejestr");
-       //     XLSX.writeFile(workbook, `RCP_${new Date().toLocaleDateString()}.xlsx`);
-       // });
+    // --- LISTENERY PRZYCISKÓW ---
+    document.getElementById('manualBtn').addEventListener('click', () => {
+        if(html5QrcodeScanner) html5QrcodeScanner.clear();
+        document.getElementById('reader').classList.add('hidden');
+        document.getElementById('bottom-controls').classList.add('hidden');
+        document.getElementById('manual-section').classList.remove('hidden');
+        const now = new Date();
+        document.getElementById('manual-time').value = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+    });
 
-      //  document.getElementById('clearBtn').addEventListener('click', () => {
-      //      if (confirm("Wyczyścić pamięć?")) {
-      //          localStorage.removeItem('RCP');
-      //          updateRowCounter();
-      //      }
-      //  });
+    document.getElementById('cancelManualBtn').addEventListener('click', startScanner);
 
-        window.onload = startScanner;
-    </script>
+    document.getElementById('confirmManualBtn').addEventListener('click', () => {
+        const name = document.getElementById('manual-name').value.trim().toUpperCase();
+        const timeVal = document.getElementById('manual-time').value;
+        if (!name || !timeVal) { alert("Proszę wypełnić oba pola."); return; }
+        const [hours, minutes] = timeVal.split(':');
+        const manualDate = new Date();
+        manualDate.setHours(parseInt(hours), parseInt(minutes), 0);
+        processEntry(name, manualDate);
+    });
+
+    // --- GŁÓWNY LISTENERA ZAPISU ---
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('saveBtn');
+
+        if (!navigator.onLine) {
+            alert("⚠️ Brak połączenia z internetem!");
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "Wysyłanie...";
+
+        const editedTime = document.getElementById('time-display').value;
+        if (editedTime) {
+            const [newHours, newMinutes] = editedTime.split(':');
+            currentFullDate.setHours(parseInt(newHours), parseInt(newMinutes), 0);
+        }
+        
+        let logs = JSON.parse(localStorage.getItem('RCP')) || [];
+        let formattedDate = currentFullDate.toLocaleDateString('pl-PL') + " " + currentFullDate.toLocaleTimeString('pl-PL');
+        
+        let payload = {
+            kod: currentCode,
+            action: isReturnAction ? "zakonczenie" : "rozpoczecie",
+            datetime: formattedDate
+        };
+
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error("Błąd serwera");
+
+            if (isReturnAction) {
+                for (let i = logs.length - 1; i >= 0; i--) {
+                    if (logs[i].kod === currentCode && logs[i].zakonczenieRaw === null) {
+                        logs[i].zakonczenieRaw = currentFullDate.toISOString();
+                        logs[i].zakonczenieFormat = currentFullDate.toLocaleTimeString('pl-PL');
+                        break;
+                    }
+                }
+            } else {
+                logs.push({
+                    kod: currentCode,
+                    rozpoczecieRaw: currentFullDate.toISOString(),
+                    rozpoczecieFormat: currentFullDate.toLocaleTimeString('pl-PL'),
+                    zakonczenieRaw: null,
+                    zakonczenieFormat: ""
+                });
+            }
+
+            localStorage.setItem('RCP', JSON.stringify(logs));
+            document.getElementById('manual-name').value = "";
+            
+            // PRZYWRACAMY PRZYCISK I WRACAMY DO SKANERA
+            resetUI();
+            startScanner();
+
+        } catch (err) {
+            console.error("Błąd:", err);
+            alert("❌ Błąd połączenia. Spróbuj jeszcze raz.");
+            btn.disabled = false;
+            btn.innerText = "Zatwierdź";
+        }
+    });
+
+    window.onload = startScanner;
+</script>
 </body>
 </html>

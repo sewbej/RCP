@@ -196,50 +196,80 @@ document.getElementById('time-display').value = `${hours}:${minutes}`;
             processEntry(name, manualDate);
         });
 
-        document.getElementById('saveBtn').addEventListener('click', () => {
-const editedTime = document.getElementById('time-display').value; // Pobiera "HH:MM"
+document.getElementById('saveBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('saveBtn'); // Referencja do przycisku
+
+    // 1. Sprawdzenie połączenia przed wysłaniem
+    if (!navigator.onLine) {
+        alert("⚠️ Brak połączenia z internetem! Sprawdź sieć i spróbuj ponownie.");
+        return;
+    }
+
+    // 2. Blokada przycisku (UI feedback)
+    btn.disabled = true;
+    btn.innerText = "Wysyłanie...";
+
+    // Logika czasu
+    const editedTime = document.getElementById('time-display').value;
     if (editedTime) {
         const [newHours, newMinutes] = editedTime.split(':');
         currentFullDate.setHours(parseInt(newHours), parseInt(newMinutes), 0);
     }
-            let logs = JSON.parse(localStorage.getItem('RCP')) || [];
-            let formattedDate = currentFullDate.toLocaleDateString('pl-PL') + " " + currentFullDate.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
-            
-            let payload = {
-                kod: currentCode,
-                action: isReturnAction ? "zakonczenie" : "rozpoczecie",
-                datetime: formattedDate
-            };
+    
+    let logs = JSON.parse(localStorage.getItem('RCP')) || [];
+    let formattedDate = currentFullDate.toLocaleDateString('pl-PL') + " " + currentFullDate.toLocaleTimeString('pl-PL');
+    
+    let payload = {
+        kod: currentCode,
+        action: isReturnAction ? "zakonczenie" : "rozpoczecie",
+        datetime: formattedDate
+    };
 
-            fetch(GOOGLE_SCRIPT_URL, {
-                method: "POST",
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify(payload)
-            }).then(() => console.log("Wysłano do Google Sheets!"))
-              .catch(err => console.error("Błąd Arkusza:", err));
-
-            if (isReturnAction) {
-                for (let i = logs.length - 1; i >= 0; i--) {
-                    if (logs[i].kod === currentCode && logs[i].zakonczenieRaw === null) {
-                        logs[i].zakonczenieRaw = currentFullDate.toISOString();
-                        logs[i].zakonczenieFormat = currentFullDate.toLocaleTimeString('pl-PL');
-                        break;
-                    }
-                }
-            } else {
-                logs.push({
-                    kod: currentCode,
-                    rozpoczecieRaw: currentFullDate.toISOString(),
-                    rozpoczecieFormat: currentFullDate.toLocaleTimeString('pl-PL'),
-                    zakonczenieRaw: null,
-                    zakonczenieFormat: ""
-                });
-            }
-
-            localStorage.setItem('RCP', JSON.stringify(logs));
-            document.getElementById('manual-name').value = ""; // Czyścimy pole
-            startScanner();
+    // 3. Próba wysyłki z obsługą błędów (try-catch)
+    try {
+        const response = await fetch(GOOGLE_SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload)
         });
+
+        // Jeśli serwer zwrócił błąd, wyrzuć wyjątek
+        if (!response.ok) throw new Error("Błąd serwera");
+
+        console.log("Wysłano do Google Sheets!");
+
+        // 4. Jeśli wysłano pomyślnie, aktualizujemy lokalne dane
+        if (isReturnAction) {
+            for (let i = logs.length - 1; i >= 0; i--) {
+                if (logs[i].kod === currentCode && logs[i].zakonczenieRaw === null) {
+                    logs[i].zakonczenieRaw = currentFullDate.toISOString();
+                    logs[i].zakonczenieFormat = currentFullDate.toLocaleTimeString('pl-PL');
+                    break;
+                }
+            }
+        } else {
+            logs.push({
+                kod: currentCode,
+                rozpoczecieRaw: currentFullDate.toISOString(),
+                rozpoczecieFormat: currentFullDate.toLocaleTimeString('pl-PL'),
+                zakonczenieRaw: null,
+                zakonczenieFormat: ""
+            });
+        }
+
+        localStorage.setItem('RCP', JSON.stringify(logs));
+        document.getElementById('manual-name').value = "";
+        startScanner();
+
+    } catch (err) {
+        // 5. Obsługa błędu - przywracamy przycisk, aby użytkownik mógł ponowić próbę
+        console.error("Błąd Arkusza:", err);
+        alert("❌ Błąd połączenia z serwerem. Dane nie zostały zapisane w arkuszu. Sprawdź internet i spróbuj jeszcze raz.");
+        
+        btn.disabled = false;
+        btn.innerText = "Zatwierdź";
+    }
+});
 
         // Pozostałe funkcje Excela i czyszczenia bez zmian...
         function calculateDuration(startISO, endISO) {

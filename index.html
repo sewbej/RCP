@@ -21,6 +21,7 @@
         
         button { width: 100%; padding: 16px; margin-top: 12px; margin-bottom: 32px; font-size: 22px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; }
         #saveBtn { background-color: #1a73e8; color: white; box-shadow: 0 2px 6px rgba(26,115,232,0.4); }
+        #saveBtn.sending { background-color: #84ade0; cursor: not-allowed; }
         #reportBtn { background-color: #34a853; color: white; margin-top: 30px; }
         
         #counter-display { margin-top: 80px; font-size: 1.0em; color: #5f6368; font-weight: 500; }
@@ -30,8 +31,9 @@
         #manualBtn { background-color: #1a73e8; color: white; }
         #cancelManualBtn { background-color: #d1d3d4; color: #3c4043; margin-top: 58px; padding: 8px; font-size: 0.9em;}
         #confirmManualBtn { background-color: #1a73e8; color: white; }
-#goToPreviewBtn {     background-color: #fbbc04;     color: #000;     margin-top: 8px; }
-#goToHistoryBtn {     background-color: #5fc400;     color: #000;     margin-top: 8px; }
+        #goToPreviewBtn {     background-color: #fbbc04;     color: #000;     margin-top: 8px; }
+        #goToHistoryBtn {     background-color: #5fc400;     color: #000;     margin-top: 8px; }
+
 
 
         input { width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #dadce0; border-radius: 8px; font-size: 18px; box-sizing: border-box; }
@@ -112,6 +114,7 @@
         const btn = document.getElementById('saveBtn');
         btn.disabled = false;
         btn.innerText = "Zatwierdź";
+        btn.classList.remove('sending');
     }
 
     function updateRowCounter() {
@@ -210,6 +213,7 @@
 
         btn.disabled = true;
         btn.innerText = "Wysyłanie...";
+        btn.classList.add('sending');
 
         const editedTime = document.getElementById('time-display').value;
         if (editedTime) {

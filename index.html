@@ -23,7 +23,7 @@
         #saveBtn { background-color: #1a73e8; color: white; box-shadow: 0 2px 6px rgba(26,115,232,0.4); }
         #saveBtn.sending { background-color: #84ade0; cursor: not-allowed; }
         #reportBtn { background-color: #34a853; color: white; margin-top: 30px; }
-        
+        #deviceIdBtn{ background-color: #ea4335; color: white; margin-top: 90px;padding: 8px; font-size: 0.8em}
         #counter-display { margin-top: 80px; font-size: 1.0em; color: #5f6368; font-weight: 500; }
         .has-data { color: #1a73e8 !important; font-weight: bold; }
 
@@ -80,7 +80,7 @@
      <!--   <button id="reportBtn">Pobierz RCP EXCEL</button>-->
         <!-- Sekcja konfiguracji urządzenia -->
 <div class="admin-controls" style="margin-top: 15px;">
-    <button id="deviceIdBtn" class="btn-secondary">📱 Konfiguruj Identyfikator</button>
+    <button id="deviceIdBtn" class="btn-secondary">Konfiguruj Identyfikator</button>
 </div>
         <div id="counter-display"><span id="row-count">0</span></div>
      <!--   <button id="clearBtn">Wyczyść całą pamięć</button>  -->
@@ -124,9 +124,11 @@
         const savedId = localStorage.getItem('device_id');
         const btn = document.getElementById('deviceIdBtn');
         if (savedId) {
-            btn.innerText = `✅ ID: ${savedId}`;
+            btn.innerText = `ID: ${savedId}`;
+            btn.className = "deviceIdBtn";
         } else {
-            btn.innerText = "📱 Skonfiguruj Identyfikator";
+            btn.innerText = "Skonfiguruj Identyfikator";
+            btn.className = "deviceIdBtn";
         }
     }
 

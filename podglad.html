@@ -71,115 +71,132 @@
         </div>
     </div>
 
-    <script>
-        // --- TU WKLEJ SWÓJ LINK DO GOOGLE SCRIPT ---
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfA6Ia_OP-gA1t5-COIvBSXN5IKrO3T9nFOQlY3z3zjg7j5iW4cFE9eOKqRILWfok/exec";
+<script>
+    // --- TU WKLEJ SWÓJ LINK DO GOOGLE SCRIPT ---
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfA6Ia_OP-gA1t5-COIvBSXN5IKrO3T9nFOQlY3z3zjg7j5iW4cFE9eOKqRILWfok/exec";
 
-        // Ustawienie domyślnego roku i miesiąca na dzisiaj
-        const now = new Date();
-        const monthNames = ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"];
-        document.getElementById('yearInput').value = now.getFullYear();
-        document.getElementById('monthSelect').value = monthNames[now.getMonth()];
+    // Ustawienie domyślnego roku i miesiąca na dzisiaj
+    const now = new Date();
+    const monthNames = ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"];
+    
+    // Zapobiegamy błędom, jeśli skrypt załaduje się przed elementami DOM
+    window.addEventListener('DOMContentLoaded', () => {
+        if(document.getElementById('yearInput')) document.getElementById('yearInput').value = now.getFullYear();
+        if(document.getElementById('monthSelect')) document.getElementById('monthSelect').value = monthNames[now.getMonth()];
+    });
 
-async function getWorkHistory() {
-    const name = document.getElementById('nameInput').value.trim();
-    const month = document.getElementById('monthSelect').value;
-    const year = document.getElementById('yearInput').value;
-    const btn = document.getElementById('fetchBtn');
-    const loader = document.getElementById('loader');
-    const resultsDiv = document.getElementById('results');
+    async function getWorkHistory() {
+        const name = document.getElementById('nameInput').value.trim();
+        const month = document.getElementById('monthSelect').value;
+        const year = document.getElementById('yearInput').value;
+        const btn = document.getElementById('fetchBtn');
+        const loader = document.getElementById('loader');
+        const resultsDiv = document.getElementById('results');
 
-    if (!name) {
-        alert("Proszę wpisać nazwisko.");
-        return;
-    }
-
-    btn.disabled = true;
-    loader.style.display = "block";
-    resultsDiv.innerHTML = "";
-
-    const payload = {
-        action: "get_history",
-        kod: name,
-        miesiac: month,
-        rok: year
-    };
-
-    try {
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify(payload)
-        });
-        
-        const data = await response.json(); // To są dane z arkusza (tylko te dni, w których był)
-
-        // Tworzymy mapę danych dla szybkiego dostępu: kluczem jest numer dnia
-// NOWY KOD:
-const dataMap = {};
-data.forEach(item => {
-    // Zapisz wpis tylko wtedy, gdy dla tego dnia nie ma jeszcze nic w pamięci.
-    // Skoro najnowsze wpisy są na górze arkusza, to ten pierwszy (najnowszy) zostanie zablokowany i nie nadpisze go starszy.
-    if (!dataMap[item.dzien]) {
-        dataMap[item.dzien] = item;
-    }
-});
-
-        // Budujemy tabelę na 31 dni
-        let html = `<table>
-            <thead>
-                <tr>
-                    <th style="width: 16px;">dzień</th>
-                    <th>rozpoczęcie</th>
-                    <th>zakończenie</th>
-                    <th>czas pracy</th>
-                </tr>
-            </thead>
-            <tbody>`;
-        
-        for (let d = 1; d <= 31; d++) {
-            if (dataMap[d]) {
-                // Jeśli mamy dane dla tego dnia w arkuszu
-                html += `<tr>
-                    <td style="font-weight: bold; color: #000;">${d}</td>
-                    <td>${dataMap[d].rozpoczecie}</td>
-                    <td>${dataMap[d].zakonczenie}</td>
-                    <td>${dataMap[d].czas}</td>
-                </tr>`;
-            } else {
-                // Jeśli pracownika nie było (pusty wiersz)
-                html += `<tr style="color: #000;">
-                    <td style="font-weight: normal;">${d}</td>
-                    <td>---</td>
-                    <td>---</td>
-                    <td>---</td>
-                </tr>`;
-            }
+        if (!name) {
+            alert("Proszę wpisać nazwisko.");
+            return;
         }
 
-        html += '</tbody></table>';
-        resultsDiv.innerHTML = html;
+        // INTELLIGENTNE SPRAWDZENIE IDENTYFIKATORA: nowy klucz lub stary jako fallback
+        const savedDeviceId = localStorage.getItem('app_device_id') || localStorage.getItem('device_id') || "";
 
-    } catch (error) {
-        console.error(error);
-        alert("Błąd połączenia. Sprawdź czy GOOGLE_SCRIPT_URL jest poprawny.");
-    } finally {
-        btn.disabled = false;
-        loader.style.display = "none";
+        // Blokada: Brak identyfikatora w pamięci telefonu
+
+
+        btn.disabled = true;
+        loader.style.display = "block";
+        resultsDiv.innerHTML = "";
+
+        const payload = {
+            action: "get_history",
+            kod: name,
+            miesiac: month,
+            rok: year,
+            deviceId: savedDeviceId // Przekazanie klucza autoryzacyjnego do Google Apps Script
+        };
+
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(payload)
+            });
+            
+            const data = await response.json(); // Dane z arkusza
+
+            // Obsługa błędu autoryzacji zwróconego przez Google Apps Script
+            if (data && data.status === "error") {
+                resultsDiv.innerHTML = `<div class="no-data" style="color: red; font-weight: bold; text-align: center; padding: 20px;">${data.message}</div>`;
+                return;
+            }
+
+            // Tworzymy mapę danych dla szybkiego dostępu: kluczem jest numer dnia
+            const dataMap = {};
+            if (Array.isArray(data)) {
+                data.forEach(item => {
+                    // Skoro najnowsze wpisy są na górze arkusza, to pierwszy (najnowszy) zostanie zablokowany
+                    if (!dataMap[item.dzien]) {
+                        dataMap[item.dzien] = item;
+                    }
+                });
+            }
+
+            // Budujemy tabelę na 31 dni
+            let html = `<table>
+                <thead>
+                    <tr>
+                        <th style="width: 16px;">dzień</th>
+                        <th>rozpoczęcie</th>
+                        <th>zakończenie</th>
+                        <th>czas pracy</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            for (let d = 1; d <= 31; d++) {
+                if (dataMap[d]) {
+                    // Jeśli mamy dane dla tego dnia w arkuszu
+                    html += `<tr>
+                        <td style="font-weight: bold; color: #000;">${d}</td>
+                        <td>${dataMap[d].rozpoczecie}</td>
+                        <td>${dataMap[d].zakonczenie}</td>
+                        <td>${dataMap[d].czas}</td>
+                    </tr>`;
+                } else {
+                    // Jeśli pracownika nie było (pusty wiersz)
+                    html += `<tr style="color: #888;">
+                        <td style="font-weight: normal; color: #000;">${d}</td>
+                        <td>---</td>
+                        <td>---</td>
+                        <td>---</td>
+                    </tr>`;
+                }
+            }
+
+            html += '</tbody></table>';
+            resultsDiv.innerHTML = html;
+
+        } catch (error) {
+            console.error(error);
+            alert("Błąd połączenia. Sprawdź czy urządzenie ma internet i czy GOOGLE_SCRIPT_URL jest poprawny.");
+        } finally {
+            btn.disabled = false;
+            loader.style.display = "none";
+        }
     }
-}
 
-function openEmployeeList() {
-    const month = document.getElementById('monthSelect').value;
-    const year = document.getElementById('yearInput').value;
-    // Otwiera lista.html w nowej karcie i przekazuje parametry
-    window.open(`lista.html?miesiac=${encodeURIComponent(month)}&rok=${encodeURIComponent(year)}`, '_blank');
-}
-function openMonthlyReport() {
-    const month = document.getElementById('monthSelect').value;
-    const year = document.getElementById('yearInput').value;
-    window.open(`raport.html?miesiac=${encodeURIComponent(month)}&rok=${encodeURIComponent(year)}`, '_blank');
-}
-    </script>
+    function openEmployeeList() {
+        const month = document.getElementById('monthSelect').value;
+        const year = document.getElementById('yearInput').value;
+        window.open(`lista.html?miesiac=${encodeURIComponent(month)}&rok=${encodeURIComponent(year)}`, '_blank');
+    }
+    
+    function openMonthlyReport() {
+        const month = document.getElementById('monthSelect').value;
+        const year = document.getElementById('yearInput').value;
+        window.open(`raport.html?miesiac=${encodeURIComponent(month)}&rok=${encodeURIComponent(year)}`, '_blank');
+    }
+</script>
 </body>
 </html>

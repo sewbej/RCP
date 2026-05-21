@@ -33,73 +33,94 @@
         </div>
     </div>
 
-    <script>
-        // --- TU WKLEJ SWÓJ LINK DO GOOGLE SCRIPT ---
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfA6Ia_OP-gA1t5-COIvBSXN5IKrO3T9nFOQlY3z3zjg7j5iW4cFE9eOKqRILWfok/exec";
+<script>
+    // --- TU WKLEJ SWÓJ LINK DO GOOGLE SCRIPT ---
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfA6Ia_OP-gA1t5-COIvBSXN5IKrO3T9nFOQlY3z3zjg7j5iW4cFE9eOKqRILWfok/exec";
 
-        // Odczytanie parametrów z adresu URL (?miesiac=Maj&rok=2026)
-        const urlParams = new URLSearchParams(window.location.search);
-        const miesiac = urlParams.get('miesiac');
-        const rok = urlParams.get('rok');
+    // Odczytanie parametrów z adresu URL (?miesiac=Maj&rok=2026)
+    const urlParams = new URLSearchParams(window.location.search);
+    const miesiac = urlParams.get('miesiac');
+    const rok = urlParams.get('rok');
 
-        async function fetchEmployeeList() {
-            const loader = document.getElementById('loader');
-            const resultsDiv = document.getElementById('results');
-            const periodDisplay = document.getElementById('periodDisplay');
+    async function fetchEmployeeList() {
+        const loader = document.getElementById('loader');
+        const resultsDiv = document.getElementById('results');
+        const periodDisplay = document.getElementById('periodDisplay');
 
-            if (!miesiac || !rok) {
-                resultsDiv.innerHTML = '<div class="no-data" style="color: red;">Błąd: Nie przekazano okresu w adresie URL.</div>';
-                loader.style.display = "none";
+        if (!miesiac || !rok) {
+            resultsDiv.innerHTML = '<div class="no-data" style="color: red;">Błąd: Nie przekazano okresu w adresie URL.</div>';
+            loader.style.display = "none";
+            return;
+        }
+
+        periodDisplay.innerText = `${miesiac} ${rok}`;
+
+        // INTELLIGENTNE SPRAWDZENIE IDENTYFIKATORA: nowy klucz lub stary jako fallback
+        const savedDeviceId = localStorage.getItem('app_device_id') || localStorage.getItem('device_id') || "";
+
+        // Blokada: Brak identyfikatora w pamięci telefonu
+        if (!savedDeviceId) {
+            resultsDiv.innerHTML = `
+                <div class="no-data" style="color: #d9534f; font-weight: bold; padding: 20px;">
+                    Brak identyfikatora urządzenia w pamięci!<br>
+                    <small style="color: #666; font-weight: normal;">Zautoryzuj urządzenie w panelu głównym aplikacji (index.html).</small>
+                </div>`;
+            loader.style.display = "none";
+            return;
+        }
+
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({
+                    action: "get_employee_list",
+                    miesiac: miesiac,
+                    rok: rok,
+                    deviceId: savedDeviceId // Przekazanie klucza autoryzacyjnego do Google Apps Script
+                })
+            });
+            
+            const data = await response.json(); // Tablica unikalnych nazwisk lub obiekt błędu
+
+            // Obsługa błędu autoryzacji bezpośrednio ze skryptu Google
+            if (data && data.status === "error") {
+                resultsDiv.innerHTML = `<div class="no-data" style="color: red; font-weight: bold;">${data.message}</div>`;
                 return;
             }
 
-            periodDisplay.innerText = `${miesiac} ${rok}`;
-
-            try {
-                const response = await fetch(GOOGLE_SCRIPT_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify({
-                        action: "get_employee_list",
-                        miesiac: miesiac,
-                        rok: rok
-                    })
-                });
+            if (!Array.isArray(data) || data.length === 0) {
+                resultsDiv.innerHTML = `<div class="no-data">W miesiącu ${miesiac} ${rok} nikt nie rejestrował czasu pracy.</div>`;
+            } else {
+                let html = `<table>
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">Lp.</th>
+                            <th>Imię i Nazwisko</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
                 
-                const data = await response.json(); // Tablica unikalnych nazwisk
+                data.forEach((nazwisko, index) => {
+                    html += `<tr>
+                        <td style="color: #000;">${index + 1}.</td>
+                        <td style="font-weight: bold; color: #000;">${nazwisko}</td>
+                    </tr>`;
+                });
 
-                if (data.length === 0) {
-                    resultsDiv.innerHTML = `<div class="no-data">W miesiącu ${miesiac} ${rok} nikt nie rejestrował czasu pracy.</div>`;
-                } else {
-                    let html = `<table>
-                        <thead>
-                            <tr>
-                                <th style="width: 50px;">Lp.</th>
-                                <th>Imię i Nazwisko</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
-                    
-                    data.forEach((nazwisko, index) => {
-                        html += `<tr>
-                            <td style="color: #000;">${index + 1}.</td>
-                            <td style="font-weight: bold; color: #000;">${nazwisko}</td>
-                        </tr>`;
-                    });
-
-                    html += '</tbody></table>';
-                    resultsDiv.innerHTML = html;
-                }
-            } catch (error) {
-                console.error(error);
-                resultsDiv.innerHTML = '<div class="no-data" style="color: red;">Błąd połączenia z bazą danych Google.</div>';
-            } finally {
-                loader.style.display = "none";
+                html += '</tbody></table>';
+                resultsDiv.innerHTML = html;
             }
+        } catch (error) {
+            console.error(error);
+            resultsDiv.innerHTML = '<div class="no-data" style="color: red;">Błąd połączenia z bazą danych Google.</div>';
+        } finally {
+            loader.style.display = "none";
         }
+    }
 
-        // Uruchomienie funkcji od razu po wejściu na stronę
-        window.onload = fetchEmployeeList;
-    </script>
+    // Uruchomienie funkcji od razu po wejściu na stronę
+    window.onload = fetchEmployeeList;
+</script>
 </body>
 </html>

@@ -39,79 +39,98 @@
 
     </div>
 
-    <script>
-        // --- TU WKLEJ SWÓJ LINK DO GOOGLE SCRIPT ---
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfA6Ia_OP-gA1t5-COIvBSXN5IKrO3T9nFOQlY3z3zjg7j5iW4cFE9eOKqRILWfok/exec";
+<script>
+    // --- TU WKLEJ SWÓJ LINK DO GOOGLE SCRIPT ---
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfA6Ia_OP-gA1t5-COIvBSXN5IKrO3T9nFOQlY3z3zjg7j5iW4cFE9eOKqRILWfok/exec";
 
-        async function fetchRecentEntries() {
-            const btn = document.getElementById('refreshBtn');
-            const loader = document.getElementById('loader');
-            const resultsDiv = document.getElementById('results');
+    async function fetchRecentEntries() {
+        const btn = document.getElementById('refreshBtn');
+        const loader = document.getElementById('loader');
+        const resultsDiv = document.getElementById('results');
 
-            btn.disabled = true;
-            loader.style.display = "block";
-            resultsDiv.innerHTML = "";
+        btn.disabled = true;
+        loader.style.display = "block";
+        resultsDiv.innerHTML = "";
 
-            try {
-                const response = await fetch(GOOGLE_SCRIPT_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify({ action: "get_recent" })
-                });
-                
-                const data = await response.json();
+        // POBIERANIE Z PAMIĘCI URZĄDZENIA: Szukamy klucza o nazwie 'app_device_id'
+        const savedDeviceId = localStorage.getItem('app_device_id') || "";
 
-if (data.length === 0) {
-                    resultsDiv.innerHTML = '<div class="no-data">Brak jakichkolwiek wpisów w arkuszu.</div>';
-                } else {
-                    // Dodaliśmy nagłówek "Data"
-                    let html = `<table>
-                        <thead>
-                            <tr>
-                                <th>nazwisko</th>
-                                <th>data</th>
-                    <th>rozpoczęcie</th>
-                    <th>zakończenie</th>
-                    <th>czas_pracy</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
-                    
-                    // Zestaw do śledzenia unikalnych połączeń: pracownik + data
-                    const wyswietloneWpisy = new Set();
-
-                    data.forEach(row => {
-                        // Tworzymy unikalny klucz, np. "jan kowalski_17.05.2026"
-                        const kluczDnia = `${row.nazwisko.trim().toLowerCase()}_${row.data}`;
-
-                        // Jeśli to połączenie nazwiska i daty pojawia się PIERWSZY raz (czyli jest najnowsze)
-                        if (!wyswietloneWpisy.has(kluczDnia)) {
-                            wyswietloneWpisy.add(kluczDnia); // Blokujemy ten dzień dla tego pracownika
-
-                            html += `<tr>
-                                <td style="font-weight: normal; color: #000;text-align: left">${row.nazwisko}</td>
-                                <td>${row.data}</td>
-                                <td>${row.rozpoczecie}</td>
-                                <td>${row.zakonczenie}</td>
-                                <td>${row.czas}</td>
-                            </tr>`;
-                        }
-                    });
-
-                    html += '</tbody></table>';
-                    resultsDiv.innerHTML = html;
-                }
-            } catch (error) {
-                console.error(error);
-                resultsDiv.innerHTML = '<div class="no-data" style="color: red;">Błąd połączenia ze skryptem Google.</div>';
-            } finally {
-                btn.disabled = false;
-                loader.style.display = "none";
-            }
+        // Jeśli pamięć jest pusta, przerywamy i prosimy o autoryzację
+        if (!savedDeviceId) {
+            resultsDiv.innerHTML = `
+                <div class="no-data" style="color: #d9534f; font-weight: bold; padding: 20px;">
+                    Brak identyfikatora urządzenia w pamięci!<br>
+                    <small style="color: #666; font-weight: normal;">Zautoryzuj urządzenie w panelu głównym aplikacji.</small>
+                </div>`;
+            btn.disabled = false;
+            loader.style.display = "none";
+            return;
         }
 
-        // Automatyczne ładowanie danych po otwarciu strony
-        window.onload = fetchRecentEntries;
-    </script>
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ 
+                    action: "get_recent",
+                    deviceId: savedDeviceId // Dynamicznie wstrzyknięty klucz z pamięci telefonu
+                })
+            });
+            
+            const data = await response.json();
+
+            // Obsługa błędu autoryzacji zwróconego z Google Apps Script
+            if (data && data.status === "error") {
+                resultsDiv.innerHTML = `<div class="no-data" style="color: red; font-weight: bold;">${data.message}</div>`;
+                return;
+            }
+
+            if (!Array.isArray(data) || data.length === 0) {
+                resultsDiv.innerHTML = '<div class="no-data">Brak jakichkolwiek wpisów w arkuszu.</div>';
+            } else {
+                let html = `<table>
+                    <thead>
+                        <tr>
+                            <th>nazwisko</th>
+                            <th>data</th>
+                            <th>rozpoczęcie</th>
+                            <th>zakończenie</th>
+                            <th>czas_pracy</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+                
+                const wyswietloneWpisy = new Set();
+
+                data.forEach(row => {
+                    const kluczDnia = `${row.nazwisko.trim().toLowerCase()}_${row.data}`;
+
+                    if (!wyswietloneWpisy.has(kluczDnia)) {
+                        wyswietloneWpisy.add(kluczDnia);
+
+                        html += `<tr>
+                            <td style="font-weight: normal; color: #000; text-align: left">${row.nazwisko}</td>
+                            <td>${row.data}</td>
+                            <td>${row.rozpoczecie}</td>
+                            <td>${row.zakonczenie}</td>
+                            <td>${row.czas}</td>
+                        </tr>`;
+                    }
+                });
+
+                html += '</tbody></table>';
+                resultsDiv.innerHTML = html;
+            }
+        } catch (error) {
+            console.error(error);
+            resultsDiv.innerHTML = '<div class="no-data" style="color: red;">Błąd połączenia ze skryptem Google.</div>';
+        } finally {
+            btn.disabled = false;
+            loader.style.display = "none";
+        }
+    }
+
+    window.onload = fetchRecentEntries;
+</script>
 </body>
 </html>

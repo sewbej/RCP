@@ -26,7 +26,7 @@
         #deviceIdBtn{ background-color: #ea4335; color: white; margin-top: 90px;padding: 8px; font-size: 0.8em}
         #counter-display { margin-top: 80px; font-size: 1.0em; color: #5f6368; font-weight: 500; }
         .has-data { color: #1a73e8 !important; font-weight: bold; }
-
+        .no-data { text-align: center; padding: 20px; color: #999; }
         #clearBtn { background-color: #ea4335; color: white; margin-top: 8px; opacity: 0.8;padding: 8px; font-size: 0.7em}
         #manualBtn { background-color: #1a73e8; color: white; }
         #cancelManualBtn { background-color: #d1d3d4; color: #3c4043; margin-top: 58px; padding: 8px; font-size: 0.9em;}
@@ -80,6 +80,7 @@
      <!--   <button id="reportBtn">Pobierz RCP EXCEL</button>-->
         <!-- Sekcja konfiguracji urządzenia -->
 <div class="admin-controls" style="margin-top: 15px;">
+<button id="goToHistoryBtn" onclick="window.location.href='podglad.html'">Pokaż przepracowane godziny</button>
     <button id="deviceIdBtn" class="btn-secondary">Konfiguruj Identyfikator</button>
 </div>
         <div id="counter-display"><span id="row-count">0</span></div>
@@ -121,7 +122,8 @@
 
     // --- FUNKCJA AKTUALIZACJI ETYKIETY PRZYCISKU ---
     function updateDeviceButtonLabel() {
-        const savedId = localStorage.getItem('device_id');
+        // Zmiana klucza na 'app_device_id' dla spójności z ostatnie.html
+        const savedId = localStorage.getItem('app_device_id');
         const btn = document.getElementById('deviceIdBtn');
         if (savedId) {
             btn.innerText = `ID: ${savedId}`;
@@ -195,17 +197,17 @@
     }
 
     // --- OBSŁUGA USTAWIANIA IDENTYFIKATORA ---
-// --- OBSŁUGA USTAWIANIA IDENTYFIKATORA ---
-document.getElementById('deviceIdBtn').addEventListener('click', () => {
-    const currentSaved = localStorage.getItem('device_id') || ""; // Podpowiada to, co już jest zapisane, albo nic
-    const inputId = prompt("Wprowadź identyfikator tego urządzenia:", currentSaved);
-    
-    if (inputId === null) return; // Anulowano
+    document.getElementById('deviceIdBtn').addEventListener('click', () => {
+        // Zmiana klucza na 'app_device_id'
+        const currentSaved = localStorage.getItem('app_device_id') || ""; 
+        const inputId = prompt("Wprowadź identyfikator tego urządzenia:", currentSaved);
+        
+        if (inputId === null) return; // Anulowano
 
-    localStorage.setItem('device_id', inputId.trim());
-    alert("💾 Identyfikator urządzenia został zapisany w pamięci!");
-    updateDeviceButtonLabel();
-});
+        localStorage.setItem('app_device_id', inputId.trim());
+        alert("💾 Identyfikator urządzenia został zapisany w pamięci!");
+        updateDeviceButtonLabel();
+    });
 
     // Obsługa przycisku "Wprowadź ręcznie"
     document.getElementById('manualBtn').addEventListener('click', () => {
@@ -229,12 +231,21 @@ document.getElementById('deviceIdBtn').addEventListener('click', () => {
         processEntry(name, manualDate);
     });
 
-    // --- GŁÓWNY LISTENER ZAPISU (Z WYSYŁANIEM ID URZĄDZENIA) ---
+// --- GŁÓWNY LISTENER ZAPISU (Z WYSYŁANIEM ID URZĄDZENIA) ---
     document.getElementById('saveBtn').addEventListener('click', async () => {
         const btn = document.getElementById('saveBtn');
 
         if (!navigator.onLine) {
             alert("⚠️ Brak połączenia z internetem!");
+            return;
+        }
+
+        // Pobranie identyfikatora z pamięci (ujednolicony klucz: 'app_device_id')
+        const currentDeviceId = localStorage.getItem('app_device_id') || "";
+
+        // BLOKADA: Jeśli telefon nie ma zapisanego ID, nie pozwalamy na wysyłkę
+        if (!currentDeviceId) {
+            alert("❌ Nie można zatwierdzić! Najpierw skonfiguruj Identyfikator Urządzenia klikając przycisk na dole ekranu.");
             return;
         }
 
@@ -251,14 +262,11 @@ document.getElementById('deviceIdBtn').addEventListener('click', () => {
         let logs = JSON.parse(localStorage.getItem('RCP')) || [];
         let formattedDate = currentFullDate.toLocaleDateString('pl-PL') + " " + currentFullDate.toLocaleTimeString('pl-PL');
         
-        // Pobranie identyfikatora z pamięci (jeśli brak, wyśle pusty tekst "")
-        const currentDeviceId = localStorage.getItem('device_id') || "";
-
         let payload = {
             kod: currentCode,
             action: isReturnAction ? "zakonczenie" : "rozpoczecie",
             datetime: formattedDate,
-            deviceId: currentDeviceId // Nowe pole przekazywane do Google Apps Script
+            deviceId: currentDeviceId // Weryfikowany po stronie Google Apps Script
         };
 
         try {
@@ -268,8 +276,33 @@ document.getElementById('deviceIdBtn').addEventListener('click', () => {
                 body: JSON.stringify(payload)
             });
 
-            if (!response.ok) throw new Error("Błąd serwera");
+            if (!response.ok) {
+                throw new Error(`HTTP_${response.status}`);
+            }
 
+            const responseText = await response.text();
+            let data;
+
+            try {
+                data = JSON.parse(responseText);
+            } catch (jsonError) {
+                // Jeśli serwer Google rzucił błędem w postaci strony HTML (np. restrykcja bezpieczeństwa Google)
+                if (responseText.includes("Urządzenie nieautoryzowane") || responseText.includes("Brak dostępu")) {
+                    alert("❌ Nieautoryzowane urządzenie!\nBrak dostępu do systemu rejestracji.");
+                    resetUI();
+                    return;
+                }
+                throw new Error("ERR_JSON_PARSE");
+            }
+
+            // Obsługa błędu strukturalnego odesłanego z Google jako JSON
+            if (data && data.status === "error") {
+                alert(`❌ Odmowa dostępu: ${data.message}`);
+                resetUI();
+                return;
+            }
+
+            // --- SUKCES: Autoryzacja i zapis przeszły pomyślnie ---
             if (isReturnAction) {
                 for (let i = logs.length - 1; i >= 0; i--) {
                     if (logs[i].kod === currentCode && logs[i].zakonczenieRaw === null) {
@@ -295,10 +328,19 @@ document.getElementById('deviceIdBtn').addEventListener('click', () => {
             startScanner();
 
         } catch (err) {
-            console.error("Błąd:", err);
-            alert("❌ Błąd połączenia. Spróbuj jeszcze raz.");
+            console.error("Szczegóły błędu:", err);
+            
+            // Kiedy Google Script odrzuca nieautoryzowane połączenie, przeglądarka z reguły
+            // blokuje CORS, co wywołuje błąd TypeError. Przechwytujemy to bezpośrednio tutaj:
+            if (err.name === "TypeError") {
+                alert("🔒 Brak autoryzacji bazy danych!\nTwoje urządzenie prawdopodobnie nie zostało jeszcze dodane do listy autoryzowanych urządzeń w arkuszu.");
+            } else {
+                // Wszystkie pozostałe błędy (prawdziwy brak sieci itp.)
+                alert("❌ Błąd połączenia internetowego. Spróbuj jeszcze raz.");
+            }
             resetUI();
         }
+    
     });
 
     function calculateDuration(startISO, endISO) {

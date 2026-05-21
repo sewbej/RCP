@@ -31,89 +31,110 @@
         </div>
     </div>
 
-    <script>
-        // --- TU WKLEJ SWÓJ LINK DO GOOGLE SCRIPT ---
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfA6Ia_OP-gA1t5-COIvBSXN5IKrO3T9nFOQlY3z3zjg7j5iW4cFE9eOKqRILWfok/exec";
+<script>
+    // --- TU WKLEJ SWÓJ LINK DO GOOGLE SCRIPT ---
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfA6Ia_OP-gA1t5-COIvBSXN5IKrO3T9nFOQlY3z3zjg7j5iW4cFE9eOKqRILWfok/exec";
 
-        // Odczytanie parametrów z adresu URL (?miesiac=Maj&rok=2026)
-        const urlParams = new URLSearchParams(window.location.search);
-        const miesiac = urlParams.get('miesiac');
-        const rok = urlParams.get('rok');
+    // Odczytanie parametrów z adresu URL (?miesiac=Maj&rok=2026)
+    const urlParams = new URLSearchParams(window.location.search);
+    const miesiac = urlParams.get('miesiac');
+    const rok = urlParams.get('rok');
 
-        async function fetchMonthlyReport() {
-            const loader = document.getElementById('loader');
-            const resultsDiv = document.getElementById('results');
-            const periodDisplay = document.getElementById('periodDisplay');
+    async function fetchMonthlyReport() {
+        const loader = document.getElementById('loader');
+        const resultsDiv = document.getElementById('results');
+        const periodDisplay = document.getElementById('periodDisplay');
 
-            if (!miesiac || !rok) {
-                resultsDiv.innerHTML = '<div class="no-data" style="color: red;">Błąd: Brak zdefiniowanego okresu.</div>';
-                loader.style.display = "none";
+        if (!miesiac || !rok) {
+            resultsDiv.innerHTML = '<div class="no-data" style="color: red;">Błąd: Brak zdefiniowanego okresu.</div>';
+            loader.style.display = "none";
+            return;
+        }
+
+        periodDisplay.innerText = `${miesiac} ${rok}`;
+
+        // POBIERANIE Z PAMIĘCI URZĄDZENIA: Ujednolicony klucz 'app_device_id'
+        const savedDeviceId = localStorage.getItem('app_device_id') || "";
+
+        // Blokada: Jeśli brak klucza w pamięci przeglądarki, przerywamy i wyświetlamy błąd
+        if (!savedDeviceId) {
+            resultsDiv.innerHTML = `
+                <div class="no-data" style="color: #d9534f; font-weight: bold; padding: 20px;">
+                    Brak identyfikatora urządzenia w pamięci!<br>
+                    <small style="color: #666; font-weight: normal;">Zautoryzuj urządzenie w panelu głównym aplikacji (index.html).</small>
+                </div>`;
+            loader.style.display = "none";
+            return;
+        }
+
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({
+                    action: "get_month_data",
+                    miesiac: miesiac,
+                    rok: rok,
+                    deviceId: savedDeviceId // Przekazanie klucza autoryzacyjnego do Google Apps Script
+                })
+            });
+            
+            const data = await response.json();
+
+            // Obsługa błędu autoryzacji bezpośrednio z Google Apps Script
+            if (data && data.status === "error") {
+                resultsDiv.innerHTML = `<div class="no-data" style="color: red; font-weight: bold;">${data.message}</div>`;
                 return;
             }
 
-            periodDisplay.innerText = `${miesiac} ${rok}`;
-
-            try {
-                const response = await fetch(GOOGLE_SCRIPT_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify({
-                        action: "get_month_data",
-                        miesiac: miesiac,
-                        rok: rok
-                    })
-                });
+            if (!Array.isArray(data) || data.length === 0) {
+                resultsDiv.innerHTML = `<div class="no-data">Brak danych RCP za okres: ${miesiac} ${rok}.</div>`;
+            } else {
+                let html = `<table>
+                    <thead>
+                        <tr>
+                            <th>nazwisko</th>
+                            <th>data</th>
+                            <th>rozpoczęcie</th>
+                            <th>zakończenie</th>
+                            <th>czas_pracy</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
                 
-                const data = await response.json();
+                // Zestaw do śledzenia unikalnych połączeń: pracownik + data w danym miesiącu
+                const wyswietloneWpisy = new Set();
 
-                if (data.length === 0) {
-                    resultsDiv.innerHTML = `<div class="no-data">Brak danych RCP za okres: ${miesiac} ${rok}.</div>`;
-                } else {
-                    let html = `<table>
-                        <thead>
-                            <tr>
-                                <th>nazwisko</th>
-                                <th>data</th>
-                    <th>rozpoczęcie</th>
-                    <th>zakończenie</th>
-                    <th>czas_pracy</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
-                    
-// Zestaw do śledzenia unikalnych połączeń: pracownik + data w danym miesiącu
-const wyswietloneWpisy = new Set();
+                data.forEach(row => {
+                    // Tworzymy unikalny klucz unikalności, np. "jan kowalski_18.05.2026"
+                    const kluczDnia = `${row.nazwisko.trim().toLowerCase()}_${row.data}`;
 
-data.forEach(row => {
-    // Tworzymy unikalny klucz unikalności, np. "jan kowalski_18.05.2026"
-    const kluczDnia = `${row.nazwisko.trim().toLowerCase()}_${row.data}`;
+                    // Jeśli to połączenie nazwiska i daty pojawia się PIERWSZY raz (czyli jest najnowsze)
+                    if (!wyswietloneWpisy.has(kluczDnia)) {
+                        wyswietloneWpisy.add(kluczDnia); // Blokujemy ten dzień dla tego pracownika
 
-    // Jeśli to połączenie nazwiska i daty pojawia się PIERWSZY raz (czyli jest najnowsze)
-    if (!wyswietloneWpisy.has(kluczDnia)) {
-        wyswietloneWpisy.add(kluczDnia); // Blokujemy ten dzień dla tego pracownika, ignorując starsze duplikaty
+                        html += `<tr>
+                            <td style="font-weight: normal; color: #000; text-align: left">${row.nazwisko}</td>
+                            <td>${row.data}</td>
+                            <td>${row.rozpoczecie}</td>
+                            <td>${row.zakonczenie}</td>
+                            <td>${row.czas}</td>
+                        </tr>`;
+                    }
+                });
 
-        html += `<tr>
-            <td style="font-weight: normal; color: #000;text-align: left">${row.nazwisko}</td>
-            <td>${row.data}</td>
-            <td>${row.rozpoczecie}</td>
-            <td>${row.zakonczenie}</td>
-            <td>${row.czas}</td>
-        </tr>`;
-    }
-});
-
-                    html += '</tbody></table>';
-                    resultsDiv.innerHTML = html;
-                }
-            } catch (error) {
-                console.error(error);
-                resultsDiv.innerHTML = '<div class="no-data" style="color: red;">Błąd połączenia z bazą danych Google.</div>';
-            } finally {
-                loader.style.display = "none";
+                html += '</tbody></table>';
+                resultsDiv.innerHTML = html;
             }
+        } catch (error) {
+            console.error(error);
+            resultsDiv.innerHTML = '<div class="no-data" style="color: red;">Błąd połączenia z bazą danych Google.</div>';
+        } finally {
+            loader.style.display = "none";
         }
+    }
 
-        window.onload = fetchMonthlyReport;
-    </script>
+    window.onload = fetchMonthlyReport;
+</script>
 </body>
 </html>

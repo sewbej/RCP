@@ -83,7 +83,7 @@
         <!-- Sekcja konfiguracji urządzenia -->
 <div class="admin-controls" style="margin-top: 15px;">
 <button id="goToHistoryBtn" onclick="window.location.href='podglad.html'">Pokaż przepracowane godziny</button>
-    <button id="deviceIdBtn" class="btn-secondary">Konfiguruj Identyfikator</button>
+    <button id="deviceIdBtn" class="btn-secondary">Identyfikator</button>
 </div>
         <div id="counter-display"><span id="row-count">0</span></div>
      <!--   <button id="clearBtn">Wyczyść całą pamięć</button>  -->
@@ -136,10 +136,10 @@
         const savedId = localStorage.getItem('app_device_id');
         const btn = document.getElementById('deviceIdBtn');
         if (savedId) {
-            btn.innerText = `ID: ${savedId}`;
+            btn.innerText = `Identyfikator: **********`;
             btn.className = "deviceIdBtn";
         } else {
-            btn.innerText = "Skonfiguruj Identyfikator";
+            btn.innerText = "Identyfikator";
             btn.className = "deviceIdBtn";
         }
     }
@@ -210,12 +210,12 @@
     document.getElementById('deviceIdBtn').addEventListener('click', () => {
         // Zmiana klucza na 'app_device_id'
         const currentSaved = localStorage.getItem('app_device_id') || ""; 
-        const inputId = prompt("Wprowadź identyfikator tego urządzenia:", currentSaved);
+        const inputId = prompt("Wprowadź identyfikator:", currentSaved);
         
         if (inputId === null) return; // Anulowano
 
         localStorage.setItem('app_device_id', inputId.trim());
-        alert("💾 Identyfikator urządzenia został zapisany w pamięci!");
+        
         updateDeviceButtonLabel();
     });
 
@@ -268,7 +268,7 @@ document.getElementById('cancelSaveBtn').addEventListener('click', () => {
 
         // BLOKADA: Jeśli telefon nie ma zapisanego ID, nie pozwalamy na wysyłkę
         if (!currentDeviceId) {
-            alert("❌ Nie można zatwierdzić! Najpierw skonfiguruj Identyfikator Urządzenia klikając przycisk na dole ekranu.");
+            alert("❌ Nie można zatwierdzić! Najpierw skonfiguruj Identyfikator Urządzenia.");
             return;
         }
 

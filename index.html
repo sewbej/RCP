@@ -241,6 +241,7 @@
     });
 
 // --- GŁÓWNY LISTENER ZAPISU (Z WYSYŁANIEM ID URZĄDZENIA) ---
+document.getElementById('cancelManualBtn').addEventListener('click', startScanner);
     document.getElementById('saveBtn').addEventListener('click', async () => {
         const btn = document.getElementById('saveBtn');
 

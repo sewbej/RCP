@@ -86,7 +86,15 @@
         <div id="counter-display"><span id="row-count">0</span></div>
      <!--   <button id="clearBtn">Wyczyść całą pamięć</button>  -->
     </div>
-
+<!-- Ładne okno dialogowe sukcesu -->
+<div id="successModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 25px; border-radius: 16px; max-width: 320px; width: 85%; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-family: 'Segoe UI', sans-serif;">
+        <div style="font-size: 48px; color: #2e7d32; margin-bottom: 10px;">➔</div>
+        <h3 style="margin: 0 0 10px 0; color: #2e7d32; font-size: 20px;">Zapisano pomyślnie!</h3>
+        <p style="margin: 0 0 20px 0; color: #333; font-size: 15px; line-height: 1.4;">Dane rejestracji czasu pracy zostały prawidłowo przesłane do bazy.</p>
+        <button id="modalOkBtn" style="width: 100%; padding: 10px; background-color: #2e7d32; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s;">OK</button>
+    </div>
+</div>
 <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfA6Ia_OP-gA1t5-COIvBSXN5IKrO3T9nFOQlY3z3zjg7j5iW4cFE9eOKqRILWfok/exec";
 
@@ -323,7 +331,17 @@
 
             localStorage.setItem('RCP', JSON.stringify(logs));
             document.getElementById('manual-name').value = "";
-            
+// 2. Wyświetlamy nasze nowe, ładne okno dialogowe
+            const modal = document.getElementById('successModal');
+            modal.style.display = "flex";
+
+            // 3. Tworzymy obietnicę (Promise), która blokuje dalszy kod dopóki użytkownik nie kliknie OK
+            await new Promise((resolve) => {
+                document.getElementById('modalOkBtn').onclick = function() {
+                    modal.style.display = "none"; // Ukrywamy okienko
+                    resolve();                    // "Odbijamy" blokadę, pozwalając na dalsze wykonanie kodu
+                };
+            });
             resetUI();
             startScanner();
 

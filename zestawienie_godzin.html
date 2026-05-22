@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZESTAWIENIE GODZIN PRACY</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; padding: 20px; max-width: 700px; margin: auto; background-color: #ffffff; }
+        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 0 1px 1px rgba(0,0,0,0.6); }
+        .header-area { text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 15px; }
+        h3 { margin: 0 0 8px 0; color: #000; letter-spacing: 0.5px; }
+        .meta-text { font-size: 18px; margin: 4px 0; color: #000; }
+        .meta-text strong { color: #000; }
+        
+        .print-btn { width: auto; padding: 6px 12px; background-color: #fff; color: #000; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 0 1px 1px rgba(0,0,0,0.6); margin-bottom: 15px; }
+        .print-btn:hover { background-color: #000; color: #fff; }
+.meta-container {
+    display: flex;
+    justify-content: space-between; /* Rozsuwa elementy na lewą i prawą stronę */
+    flex-wrap: wrap;               /* W razie bardzo wąskiego ekranu ułoży je jeden pod drugim, żeby tekst się nie uciął */
+    gap: 10px;                     /* Minimalny odstęp między nimi */
+    margin-top: 8px;
+}
+        #loader { text-align: center; margin-top: 30px; color: #000; font-weight: bold; font-size: 18px; }
+        .results-container { margin-top: 15px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; font-size: 18px; }
+        th { background-color: #ffffff; color: #000000; font-weight: bold; padding-top: 0px; padding-bottom: 6px; border-bottom: 2px solid #000; text-align: center; font-size: 16px; }
+        td { padding: 2px; border-bottom: 1px solid #888; color: #000; text-align: center; }
+        tr:last-child td { border-bottom: none; }
+        
+        @media print {
+            .print-btn { display: none; }
+            body { padding: 0; }
+            .card { box-shadow: none; padding: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="print-btn" onclick="window.print()">🖨️ Drukuj / PDF</button>
+
+    <div class="card">
+        <div class="header-area">
+            <h3>ZESTAWIENIE GODZIN PRACY</h3>
+<div class="meta-container">
+    <div class="meta-text">Pracownik: <strong id="lblPracownik">...</strong></div>
+    <div class="meta-text">Okres: <strong id="lblOkres">...</strong></div>
+</div>
+        </div>
+
+        <div id="loader">Pobieranie danych z bazy...</div>
+
+        <div id="results" class="results-container">
+            <!-- Tutaj wpadnie wygenerowana tabela na 31 dni -->
+        </div>
+    </div>
+
+<script>
+    // URL pobrany bezpośrednio z Twojego kodu podglądu
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfA6Ia_OP-gA1t5-COIvBSXN5IKrO3T9nFOQlY3z3zjg7j5iW4cFE9eOKqRILWfok/exec";
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        // 1. Wyciągamy parametry przekazane w adresie URL strony
+        const urlParams = new URLSearchParams(window.location.search);
+        const name = urlParams.get('pracownik').toUpperCase();
+        const month = urlParams.get('miesiac');
+        const year = urlParams.get('rok');
+
+        if (!name || !month || !year) {
+            document.getElementById('loader').innerHTML = `<span style="color:red;">❌ Błąd: Brak wymaganych parametrów w nagłówku strony.</span>`;
+            return;
+        }
+
+        // Ustawiamy ładne teksty w nagłówku karty
+        document.getElementById('lblPracownik').innerText = name;
+        document.getElementById('lblOkres').innerText = `${month} ${year}`;
+
+        // Pobieramy identyfikator autoryzacyjny z pamięci telefonu (dokładnie jak w podglad.html)
+        const savedDeviceId = localStorage.getItem('app_device_id') || localStorage.getItem('device_id') || "";
+        const loader = document.getElementById('loader');
+        const resultsDiv = document.getElementById('results');
+
+        const payload = {
+            action: "get_history",
+            kod: name,
+            miesiac: month,
+            rok: year,
+            deviceId: savedDeviceId
+        };
+
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(payload)
+            });
+            
+            const data = await response.json();
+
+            if (data && data.status === "error") {
+                resultsDiv.innerHTML = `<div style="color: red; font-weight: bold; text-align: center; padding: 20px;">${data.message}</div>`;
+                loader.style.display = "none";
+                return;
+            }
+
+            // Mapowanie dni (Twoja oryginalna logika)
+            const dataMap = {};
+            if (Array.isArray(data)) {
+                data.forEach(item => {
+                    if (!dataMap[item.dzien]) {
+                        dataMap[item.dzien] = item;
+                    }
+                });
+            }
+
+            // Budowanie tabeli na 31 dni
+            let html = `<table>
+                <thead>
+                    <tr>
+                        <th style="width: 40px;">dzień</th>
+                        <th>rozpoczęcie</th>
+                        <th>zakończenie</th>
+                        <th>czas pracy</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            for (let d = 1; d <= 31; d++) {
+                if (dataMap[d]) {
+                    html += `<tr>
+                        <td style="font-weight: bold; color: #000;">${d}</td>
+                        <td>${dataMap[d].rozpoczecie}</td>
+                        <td>${dataMap[d].zakonczenie}</td>
+                        <td>${dataMap[d].czas}</td>
+                    </tr>`;
+                } else {
+                    html += `<tr style="color: #888;">
+                        <td style="font-weight: normal; color: #000;">${d}</td>
+                        <td>---</td>
+                        <td>---</td>
+                        <td>---</td>
+                    </tr>`;
+                }
+            }
+
+            html += '</tbody></table>';
+            resultsDiv.innerHTML = html;
+            loader.style.display = "none";
+
+        } catch (error) {
+            console.error(error);
+            loader.innerHTML = `<span style="color:red;">❌ Błąd połączenia. Upewnij się, że masz połączenie z siecią.</span>`;
+        }
+    });
+</script>
+</body>
+</html>

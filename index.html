@@ -30,6 +30,7 @@
         #clearBtn { background-color: #ea4335; color: white; margin-top: 8px; opacity: 0.8;padding: 8px; font-size: 0.7em}
         #manualBtn { background-color: #1a73e8; color: white; }
         #cancelManualBtn { background-color: #d1d3d4; color: #3c4043; margin-top: 58px; padding: 8px; font-size: 0.9em;}
+        #cancelSaveBtn { background-color: #d1d3d4; color: #3c4043; margin-top: 58px; padding: 8px; font-size: 0.9em;}
         #confirmManualBtn { background-color: #1a73e8; color: white; }
         #goToPreviewBtn {     background-color: #fbbc04;     color: #000;     margin-top: 8px; }
         #goToHistoryBtn {     background-color: #5fc400;     color: #000;     margin-top: 8px; }
@@ -70,7 +71,7 @@
         <div id="detected-action" class="status-badge"></div>
         
         <button id="saveBtn">Zatwierdź</button>
-<button id="cancelManualBtn">Anuluj</button>
+<button id="cancelSaveBtn">Anuluj</button>
     </div>
 
     <!-- Panel dolny -->
@@ -241,7 +242,7 @@
     });
 
 // --- GŁÓWNY LISTENER ZAPISU (Z WYSYŁANIEM ID URZĄDZENIA) ---
-document.getElementById('cancelManualBtn').addEventListener('click', () => {
+document.getElementById('cancelSaveBtn').addEventListener('click', () => {
         // Czyszczenie ewentualnego pola ręcznego wpisywania, jeśli było użyte
         if (document.getElementById('manual-name')) {
             document.getElementById('manual-name').value = "";

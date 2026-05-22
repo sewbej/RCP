@@ -241,7 +241,19 @@
     });
 
 // --- GŁÓWNY LISTENER ZAPISU (Z WYSYŁANIEM ID URZĄDZENIA) ---
-document.getElementById('cancelManualBtn').addEventListener('click', startScanner);
+document.getElementById('cancelManualBtn').addEventListener('click', () => {
+        // Czyszczenie ewentualnego pola ręcznego wpisywania, jeśli było użyte
+        if (document.getElementById('manual-name')) {
+            document.getElementById('manual-name').value = "";
+        }
+        
+        // Resetowanie zmiennych tymczasowych kodu
+        currentCode = ""; 
+        
+        // Ukrycie ekranu podsumowania i powrót do kamery
+        resetUI();
+        startScanner();
+    });
     document.getElementById('saveBtn').addEventListener('click', async () => {
         const btn = document.getElementById('saveBtn');
 

@@ -58,7 +58,7 @@
         <label>Imię i Nazwisko</label>
         <input type="text" id="manual-name" placeholder="imię i nazwisko">
         <label>Godzina (HH:MM)</label>
-        <input type="datetime-local" id="manual-time">
+        <input type="datetime-localy" id="manual-time">
         
         <button id="confirmManualBtn">Zatwierdź</button>
         <button id="cancelManualBtn">Anuluj</button>
@@ -170,9 +170,11 @@
         if (html5QrcodeScanner) {
             html5QrcodeScanner.clear().then(() => {
                 html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
+                html5QrcodeScanner.render(onScanSuccess);
             });
         } else {
             html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
+            html5QrcodeScanner.render(onScanSuccess);
         }
     }
 
@@ -209,7 +211,7 @@
     }
 
     function onScanSuccess(decodedText) {
-        playSuccessSound();
+       // playSuccessSound();
         html5QrcodeScanner.clear();
         processEntry(decodedText, new Date());
     }

@@ -32,7 +32,7 @@
         #cancelManualBtn { background-color: #d1d3d4; color: #3c4043; margin-top: 58px; padding: 8px; font-size: 0.9em;}
         #cancelSaveBtn { background-color: #d1d3d4; color: #3c4043; margin-top: 58px; padding: 8px; font-size: 0.9em;}
         #confirmManualBtn { background-color: #1a73e8; color: white; }
-        #goToPreviewBtn {     background-color: #fbbc04;     color: #000;     margin-top: 8px; }
+        #goToPreviewBtn {     background-color: #fbbc04;     color: #000;     margin-top: 20px; }
         #goToHistoryBtn {     background-color: #5fc400;     color: #000;     margin-top: 8px; }
         #GeneratorBtn {     background-color: #5fc400;     color: #000;     margin-top: 8px; }
         #pracownikBtn {     background-color: #65d1db;     color: #000;     margin-top: 28px; }
@@ -68,7 +68,7 @@
     <div id="action-section" class="section hidden">
         <div class="data-row"><span id="result-display" class="highlight"></span></div>
         <div class="data-row" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-    <span>Godzina:</span>
+    <span></span>
     <input type="datetime-local" id="time-display" class="highlight" style="width: auto; margin-top: 0; padding: 5px 10px; text-align: center;">
 </div>
         <div id="detected-action" class="status-badge"></div>
@@ -86,8 +86,8 @@
         <!-- Sekcja konfiguracji urządzenia -->
 <div class="admin-controls" style="margin-top: 15px;">
 <button id="GeneratorBtn" onclick="window.location.href='https://sewbej.github.io/QRcode-generator'">Generator QR</button>
-<button id="pracownikBtn" onclick="window.location.href='qrcode.jpeg'" >Zestawienie godzin pracy (pracownik)</button>
-<button id="kierownikBtn" onclick="window.location.href='podglad.html'">Zestawienie godzin pracy (kierownik)</button>
+<button id="pracownikBtn" onclick="window.location.href='qrcode.jpeg'" >Zestawienie godzin (pracownik)</button>
+<button id="kierownikBtn" onclick="window.location.href='podglad.html'">Zestawienie godzin (kierownik)</button>
     <button id="deviceIdBtn" class="btn-secondary">Identyfikator</button>
 </div>
         <div id="counter-display"><span id="row-count">0</span></div>

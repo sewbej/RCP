@@ -57,8 +57,8 @@
         <h3>Wpis ręczny</h3>
         <label>Imię i Nazwisko</label>
         <input type="text" id="manual-name" placeholder="imię i nazwisko">
-        <label>Godzina (HH:MM)</label>
-        <input type="datetime-localy" id="manual-time">
+       
+        <input type="datetime-local" id="manual-time" style="display: none;">
         
         <button id="confirmManualBtn">Zatwierdź</button>
         <button id="cancelManualBtn">Anuluj</button>
@@ -228,29 +228,31 @@
     });
 
     // Obsługa przycisku "Wprowadź ręcznie"
+// Obsługa przycisku "Wprowadź ręcznie"
     document.getElementById('manualBtn').addEventListener('click', () => {
         if(html5QrcodeScanner) html5QrcodeScanner.clear();
         document.getElementById('reader').classList.add('hidden');
         document.getElementById('bottom-controls').classList.add('hidden');
         document.getElementById('manual-section').classList.remove('hidden');
         
-        const now = new Date();
-        const offset = now.getTimezoneOffset() * 60000;
-        const localISOTime = (new Date(now.getTime() - offset)).toISOString().slice(0, 16);
-        
-        // Zakładam, że manual-time też zmieniłeś na datetime-local, jeśli nie - zostanie wpisana pełna data
-        document.getElementById('manual-time').value = localISOTime;
+        // Czyścimy pole tekstowe na nazwisko przy każdym otwarciu panelu
+        document.getElementById('manual-name').value = "";
     });
 
     document.getElementById('cancelManualBtn').addEventListener('click', startScanner);
 
     document.getElementById('confirmManualBtn').addEventListener('click', () => {
         const name = document.getElementById('manual-name').value.trim().toUpperCase();
-        const timeVal = document.getElementById('manual-time').value;
-        if (!name || !timeVal) { alert("Proszę wypełnić oba pola."); return; }
         
-        // POPRAWKA: Bezpośrednie tworzenie obiektu daty z pola ręcznego wprowadzania
-        const manualDate = new Date(timeVal);
+        if (!name) { 
+            alert("Proszę wpisać nazwisko."); 
+            return; 
+        }
+        
+        // Zamiast czytać z pola, generujemy aktualną datę i godzinę "tu i teraz"
+        const manualDate = new Date(); 
+        
+        // Przekazujemy dane do standardowego ekranu podsumowania (tam gdzie można to jeszcze edytować)
         processEntry(name, manualDate);
     });
 

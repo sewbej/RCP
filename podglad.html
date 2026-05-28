@@ -86,17 +86,20 @@
     });
 
 function getWorkHistory() {
-        const name = document.getElementById('nameInput').value.trim();
-        const month = document.getElementById('monthSelect').value;
-        const year = document.getElementById('yearInput').value;
+        const rawName = document.getElementById('nameInput').value.trim(); // Pełna fraza: "Jan Nowak 857394"
 
-        if (!name) {
+        if (!rawName) {
             alert("Proszę wpisać nazwisko.");
             return;
         }
 
-        // Otwarcia nowej karty dokładnie w Twoim stylu – przekazujemy parametry w URL
-        window.open(`zestawienie_godzin.html?pracownik=${encodeURIComponent(name)}&miesiac=${encodeURIComponent(month)}&rok=${encodeURIComponent(year)}`, '_blank');
+        // Tworzymy ładną wersję bez cyfr: "Jan Nowak"
+        const cleanName = rawName.replace(/[0-9]/g, '').trim();
+        const month = document.getElementById('monthSelect').value;
+        const year = document.getElementById('yearInput').value;
+
+        // Przekazujemy w URL zarówno "szukaj" (z cyframi) jak i "pokaz" (bez cyfr)
+        window.open(`zestawienie_godzin.html?szukaj=${encodeURIComponent(rawName)}&pokaz=${encodeURIComponent(cleanName)}&miesiac=${encodeURIComponent(month)}&rok=${encodeURIComponent(year)}`, '_blank');
     }
 
     function openEmployeeList() {

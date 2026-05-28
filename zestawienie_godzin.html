@@ -26,7 +26,7 @@
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 1px; overflow: hidden; font-size: 18px; }
         th { background-color: #ffffff; color: #000000; font-weight: bold; padding-top: 0px; padding-bottom: 6px; border-bottom: 2px solid #000; text-align: center; font-size: 16px; }
         td { padding: 2px; border-bottom: 1px solid #000; color: #000; text-align: center; }
-        tr:last-child td { border-bottom: 2px solid #000; }
+        tr:last-child td { border-bottom: none; }
         
         @media print {
             .print-btn { display: none; }
@@ -59,34 +59,36 @@
     // URL pobrany bezpośrednio z Twojego kodu podglądu
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfA6Ia_OP-gA1t5-COIvBSXN5IKrO3T9nFOQlY3z3zjg7j5iW4cFE9eOKqRILWfok/exec";
 
-    document.addEventListener('DOMContentLoaded', async () => {
-        // 1. Wyciągamy parametry przekazane w adresie URL strony
+document.addEventListener('DOMContentLoaded', async () => {
+        // Wyciągamy nowe parametry z adresu URL
         const urlParams = new URLSearchParams(window.location.search);
-        const name = urlParams.get('pracownik').toUpperCase();
+        const nameToSearch = urlParams.get('szukaj'); // Posiada cyfry, np. "Jan Nowak 857394"
+        const nameToDisplay = urlParams.get('pokaz'); // Czysty tekst, np. "Jan Nowak"
         const month = urlParams.get('miesiac');
         const year = urlParams.get('rok');
 
-        if (!name || !month || !year) {
-            document.getElementById('loader').innerHTML = `<span style="color:red;">❌ Błąd: Brak wymaganych parametrów w nagłówku strony.</span>`;
+        if (!nameToSearch || !month || !year) {
+            document.getElementById('loader').innerHTML = `<span style="color:red;">❌ Błąd: Brak wymaganych parametrów.</span>`;
             return;
         }
 
-        // Ustawiamy ładne teksty w nagłówku karty
-        document.getElementById('lblPracownik').innerText = name;
+        // POKAZYWANIE: W nagłówku strony wpisujemy ładne imię bez cyfr
+        document.getElementById('lblPracownik').innerText = nameToDisplay || nameToSearch;
         document.getElementById('lblOkres').innerText = `${month} ${year}`;
 
-        // Pobieramy identyfikator autoryzacyjny z pamięci telefonu (dokładnie jak w podglad.html)
         const savedDeviceId = localStorage.getItem('app_device_id') || localStorage.getItem('device_id') || "";
         const loader = document.getElementById('loader');
         const resultsDiv = document.getElementById('results');
 
         const payload = {
             action: "get_history",
-            kod: name,
+            kod: nameToSearch, // SZUKANIE: Do bazy Google leci dokładny kod z cyframi!
             miesiac: month,
             rok: year,
             deviceId: savedDeviceId
         };
+
+        // ... reszta Twojego kodu fetch pozostaje bez zmian ...
 
         try {
             const response = await fetch(GOOGLE_SCRIPT_URL, {
@@ -95,7 +97,7 @@
                 body: JSON.stringify(payload)
             });
             
-            const data = await response.json();
+ const data = await response.json();
 
             if (data && data.status === "error") {
                 resultsDiv.innerHTML = `<div style="color: red; font-weight: bold; text-align: center; padding: 20px;">${data.message}</div>`;
@@ -103,36 +105,69 @@
                 return;
             }
 
-            // Mapowanie dni (Twoja oryginalna logika)
-            const dataMap = {};
-            if (Array.isArray(data)) {
-                data.forEach(item => {
-                    if (!dataMap[item.dzien]) {
-                        dataMap[item.dzien] = item;
-                    }
-                });
+            // === NOWA LOGIKA: Sprawdzamy, czy baza zwróciła jakiekolwiek rekordy dla tej osoby ===
+            if (!data || !Array.isArray(data) || data.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div style="color: #d32f2f; font-weight: bold; text-align: center; padding: 30px; border: 1px dashed #d32f2f; border-radius: 8px; margin-top: 20px; font-size: 16px; background-color: #ffebee;">
+                        ⚠️ Brak osoby o takim imieniu i nazwisku w wybranym okresie.
+                    </div>`;
+                loader.style.display = "none";
+                return; // Przerywamy dalsze wykonywanie kodu, nie budujemy tabeli
             }
 
-            // Budowanie tabeli na 31 dni
+            // Mapowanie dni (Twoja oryginalna logika - wykona się tylko, gdy dane ISTNIEJĄ)
+            const dataMap = {};
+            data.forEach(item => {
+                if (!dataMap[item.dzien]) {
+                    dataMap[item.dzien] = item;
+                }
+            });
+
+// Zmienna do przechowywania łącznej liczby minut z całego miesiąca
+            let calkowityCzasWMinutach = 0;
+
+            // Budowanie nagłówka tabeli
             let html = `<table>
                 <thead>
                     <tr>
                         <th style="width: 40px;">dzień miesiąca</th>
-                        <th>rozpoczęcie pracy</th>
-                        <th>zakończenie pracy</th>
+                        <th>rozpoczęcie</th>
+                        <th>zakończenie</th>
                         <th>czas pracy</th>
                     </tr>
                 </thead>
                 <tbody>`;
             
+            // Pętla generująca wiersze dla 31 dni
             for (let d = 1; d <= 31; d++) {
                 if (dataMap[d]) {
-                    html += `<tr>
-                        <td style="font-weight: bold; color: #000;">${d}</td>
-                        <td>${dataMap[d].rozpoczecie}</td>
-                        <td>${dataMap[d].zakonczenie}</td>
-                        <td>${dataMap[d].czas}</td>
-                    </tr>`;
+                    const czasPracy = dataMap[d].czas ? dataMap[d].czas.trim() : "";
+
+                    if (czasPracy === "0:00" || czasPracy === "00:00" || czasPracy === "00:00:00") {
+                        html += `<tr style="color: #888;">
+                            <td style="font-weight: normal; color: #000;">${d}</td>
+                            <td>---</td>
+                            <td>---</td>
+                            <td>---</td>
+                        </tr>`;
+                    } else {
+                        html += `<tr>
+                            <td style="font-weight: bold; color: #000;">${d}</td>
+                            <td>${dataMap[d].rozpoczecie}</td>
+                            <td>${dataMap[d].zakonczenie}</td>
+                            <td>${czasPracy}</td>
+                        </tr>`;
+
+                        // --- LOGIKA SUMOWANIA ---
+                        // Rozbijamy czas "GG:MM" na osobne godziny i minuty
+                        const częściCzasu = czasPracy.split(':');
+                        if (częściCzasu.length >= 2) {
+                            const godziny = parseInt(częściCzasu[0], 10) || 0;
+                            const minuty = parseInt(częściCzasu[1], 10) || 0;
+                            // Zamieniamy wszystko na minuty i dodajemy do licznika
+                            calkowityCzasWMinutach += (godziny * 60) + minuty;
+                        }
+                    }
                 } else {
                     html += `<tr style="color: #888;">
                         <td style="font-weight: normal; color: #000;">${d}</td>
@@ -143,7 +178,23 @@
                 }
             }
 
+            // --- KONWERSJA SUMY Z MINUT NA FORMAT GG:MM ---
+            const sumaGodzin = Math.floor(calkowityCzasWMinutach / 60);
+            const sumaMinut = calkowityCzasWMinutach % 60;
+            // Formatujemy minuty tak, aby zawsze miały dwie cyfry (np. 05 zamiast 5)
+            const sformatowaneMinuty = sumaMinut.toString().padStart(2, '0');
+            const ostatecznySumaCzasu = `${sumaGodzin}:${sformatowaneMinuty}`;
+
+            // --- DODANIE WIERSZA Z SUMĄ NA KOŃCU TABELI ---
+            html += `
+                <tr style="background-color: #fff; font-size: 16px;">
+                    <td colspan="3" style="text-align: right; font-weight: normal; padding: 6px; color: #000;">SUMA GODZIN:</td>
+                    <td style="padding: 6px; color: #000; font-size: 20px;"><strong>${ostatecznySumaCzasu}</strong></td>
+                </tr>`;
+
             html += '</tbody></table>';
+            
+            // Wstrzyknięcie gotowej tabeli wraz z sumą do dokumentu HTML
             resultsDiv.innerHTML = html;
             loader.style.display = "none";
 

@@ -4,20 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Raport Miesięczny RCP</title>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; padding: 15px; max-width: 700px; margin: auto; background-color: #f0f2f5; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         h3 { text-align: center; color: #000; margin-top: -10px; font-weight: normal; }
         
         #loader { text-align: center; margin: 20px 0; color: #000; font-weight: bold; }
-#exportExcelBtn:active {
-    background-color: #13482c !important;
-    transform: scale(0.98);
-}
         
-        .results-container { margin-top: 25px; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; font-size: 16px; }
+        .results-container { margin-top: 2px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; font-size: 14px; }
         th { background-color: #ffffff; color: #000000; font-weight: bold; padding-top: 6px; border-bottom: 1px solid #444; text-align: center; font-size: 14px;}
         td { padding: 2px; border-bottom: 1px solid #444; border-left: 1px solid #ccc; color: #000; text-align: center;}
         tr:last-child, td:last-child { border-right: 1px solid #ccc; }
@@ -25,9 +20,6 @@
     </style>
 </head>
 <body>
-<button id="exportExcelBtn" style="padding: 10px 20px; background-color: #1f7246; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: normal; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background 0.2s;">
-    Zapisz (EXCEL)
-</button>
     <div class="card">
         <h3 id="periodDisplay">Pobieranie okresu...</h3>
         
@@ -97,7 +89,42 @@
             if (!Array.isArray(data) || data.length === 0) {
                 resultsDiv.innerHTML = `<div class="no-data">Brak danych RCP za okres: ${miesiac} ${rok}.</div>`;
             } else {
-                let html = `<table>
+                // --- 1. ETAP: OBLICZANIE SUMY GODZIN ---
+                let calkowityCzasWMinutach = 0;
+                const wyswietloneWpisyDoSumy = new Set();
+
+                data.forEach(row => {
+                    const kluczDnia = `${row.nazwisko.trim().toLowerCase()}_${row.data}`;
+                    
+                    if (!wyswietloneWpisyDoSumy.has(kluczDnia)) {
+                        wyswietloneWpisyDoSumy.add(kluczDnia);
+                        
+                        const cPracy = row.czas ? row.czas.trim() : "";
+                        if (cPracy !== "0:00" && cPracy !== "00:00" && cPracy !== "00:00:00" && cPracy !== "") {
+                            const czesci = cPracy.split(':');
+                            if (czesci.length >= 2) {
+                                const godziny = parseInt(czesci[0], 10) || 0;
+                                const minuty = parseInt(czesci[1], 10) || 0;
+                                calkowityCzasWMinutach += (godziny * 60) + minuty;
+                            }
+                        }
+                    }
+                });
+
+                const sumaGodzin = Math.floor(calkowityCzasWMinutach / 60);
+                const sumaMinut = calkowityCzasWMinutach % 60;
+                const sformatowaneMinuty = sumaMinut.toString().padStart(2, '0');
+                const ostatecznaSumaCzasu = `${sumaGodzin}:${sformatowaneMinuty}`;
+
+                // --- 2. ETAP: BUDOWANIE BANERA Z SUMĄ ORAZ TABELI HTML ---
+                let html = `
+                    <div style="background-color: #fff; border: none; border-radius: 8px; padding: 2px; margin-bottom: 6px; text-align: center; font-family: sans-serif;">
+                        <span style="font-size: 12px; color: #000; font-weight: normal;">SUMA GODZIN W TYM MIESIĄCU:</span>
+                        <span style="font-size: 16px; color: #000; font-weight: bold; margin-top: 0px;">${ostatecznaSumaCzasu} </span>
+                    </div>
+                `;
+
+                html += `<table>
                     <thead>
                         <tr>
                             <th>nazwisko</th>
@@ -120,13 +147,24 @@
                     if (!wyswietloneWpisy.has(kluczDnia)) {
                         wyswietloneWpisy.add(kluczDnia); // Blokujemy ten dzień dla tego pracownika
 
-                        html += `<tr>
-                            <td style="font-weight: normal; color: #000; text-align: left">${row.nazwisko.replace(/[0-9]/g, '')}</td>
-                            <td>${row.data}</td>
-                            <td>${row.rozpoczecie}</td>
-                            <td>${row.zakonczenie}</td>
-                            <td>${row.czas}</td>
-                        </tr>`;
+                        const cPracy = row.czas ? row.czas.trim() : "";
+                        if (cPracy === "0:00" || cPracy === "00:00" || cPracy === "00:00:00") {
+                            html += `<tr style="color: #888;">
+                                <td style="font-weight: normal; color: #000; text-align: left">${row.nazwisko.replace(/[0-9]/g, '')}</td>
+                                <td>${row.data}</td>
+                                <td>---</td>
+                                <td>---</td>
+                                <td>---</td>
+                            </tr>`;
+                        } else {
+                            html += `<tr>
+                                <td style="font-weight: normal; color: #000; text-align: left">${row.nazwisko.replace(/[0-9]/g, '')}</td>
+                                <td data-t="s">${row.data}</td>
+                                <td>${row.rozpoczecie}</td>
+                                <td>${row.zakonczenie}</td>
+                                <td>${cPracy}</td>
+                            </tr>`;
+                        }
                     }
                 });
 
@@ -142,33 +180,6 @@
     }
 
     window.onload = fetchMonthlyReport;
-// --- OBSŁUGA EKSPORTU DO EXCELA ---
-    document.getElementById('exportExcelBtn').addEventListener('click', () => {
-        // 1. Szukamy tabeli wewnątrz kontenera z wynikami (podmień 'results', jeśli Twój kontener nazywa się inaczej)
-        const table = document.querySelector('#results table');
-        
-        if (!table) {
-            alert("❌ Brak danych w tabeli do wyeksportowania! Najpierw wygeneruj raport.");
-            return;
-        }
-
-        // 2. Tworzymy nowy, czysty skoroszyt Excela
-        const wb = XLSX.utils.book_new();
-        
-        // 3. Konwertujemy naszą tabelę HTML bezpośrednio na arkusz Excela
-        // raw: true zapobiega automatycznemu obcinaniu zer na początku tekstów przez Excela
-        const ws = XLSX.utils.table_to_sheet(table, { raw: true });
-
-        // 4. Dodajemy arkusz do skoroszytu pod nazwą "Raport RCP"
-        XLSX.utils.book_append_sheet(wb, ws, "Raport RCP");
-
-        // 5. Generujemy dynamiczną nazwę pliku z aktualną datą
-        const dzisiejszaData = new Date().toISOString().slice(0, 10);
-        const nazwaPliku = `Raport_RCP_${dzisiejszaData}.xlsx`;
-
-        // 6. Wymuszamy pobranie pliku przez przeglądarkę
-        XLSX.writeFile(wb, nazwaPliku);
-    });
 </script>
 </body>
 </html>

@@ -197,11 +197,11 @@ function applyRoundingTolerance(dateObj, actionType) {
         
         if (html5QrcodeScanner) {
             html5QrcodeScanner.clear().then(() => {
-                html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
+                html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 20, qrbox: 250 }, false);
                 html5QrcodeScanner.render(onScanSuccess);
             });
         } else {
-            html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 20, qrbox: 250 }, false);
             html5QrcodeScanner.render(onScanSuccess);
         }
     }
@@ -362,7 +362,7 @@ function applyRoundingTolerance(dateObj, actionType) {
                 data = JSON.parse(responseText);
             } catch (jsonError) {
                 if (responseText.includes("Urządzenie nieautoryzowane") || responseText.includes("Brak dostępu")) {
-                    alert("❌ Nieautoryzowane urządzenie!\nBrak dostępu do systemu rejestracji.");
+                    alert("❌ Nieautoryzowane urządzenie!\nBrak dostępu.");
                     resetUI();
                     return;
                 }
@@ -415,7 +415,7 @@ function applyRoundingTolerance(dateObj, actionType) {
         } catch (err) {
             console.error("Szczegóły błędu:", err);
             if (err.name === "TypeError") {
-                alert("🔒 Brak autoryzacji bazy danych!\nTwoje urządzenie prawdopodobnie nie zostało jeszcze dodane do listy autoryzowanych urządzeń w arkuszu.");
+                alert("🔒 Brak autoryzacji!\nTwoje urządzenie nie zostało dodane do listy autoryzowanych urządzeń.");
             } else {
                 alert("❌ Błąd połączenia internetowego. Spróbuj jeszcze raz.");
             }

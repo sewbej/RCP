@@ -25,7 +25,7 @@
         .results-container { margin-top: 6px; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 1px; overflow: hidden; font-size: 18px; }
         th { background-color: #ffffff; color: #000000; font-weight: bold; padding-top: 0px; padding-bottom: 6px; border-bottom: 2px solid #000; text-align: center; font-size: 16px; }
-        td { padding: 2px; border-bottom: 1px solid #000; color: #000; text-align: center; }
+        td { padding: 0px; border-bottom: 1px solid #000; color: #000; text-align: center; }
         tr:last-child td { border-bottom: none; }
         
         @media print {
@@ -88,8 +88,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             deviceId: savedDeviceId
         };
 
-        // ... reszta Twojego kodu fetch pozostaje bez zmian ...
-
         try {
             const response = await fetch(GOOGLE_SCRIPT_URL, {
                 method: "POST",
@@ -131,8 +129,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <thead>
                     <tr>
                         <th style="width: 40px;">dzień miesiąca</th>
-                        <th>rozpoczęcie</th>
-                        <th>zakończenie</th>
+                        <th>rozpoczęcie pracy</th>
+                        <th>zakończenie pracy</th>
                         <th>czas pracy</th>
                     </tr>
                 </thead>

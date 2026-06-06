@@ -22,7 +22,6 @@
         button { width: 100%; padding: 16px; margin-top: 12px; margin-bottom: 32px; font-size: 22px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; }
         #saveBtn { background-color: #1a73e8; color: white; box-shadow: 0 2px 6px rgba(26,115,232,0.4); }
         #saveBtn.sending { background-color: #84ade0; cursor: not-allowed; }
-        #reportBtn { background-color: #34a853; color: white; margin-top: 30px; }
         #deviceIdBtn{ background-color: #ea4335; color: white; margin-top: 90px;padding: 8px; font-size: 0.8em}
         #counter-display { margin-top: 80px; font-size: 1.0em; color: #5f6368; font-weight: 500; }
         .has-data { color: #1a73e8 !important; font-weight: bold; }
@@ -33,17 +32,20 @@
         #cancelSaveBtn { background-color: #d1d3d4; color: #3c4043; margin-top: 58px; padding: 8px; font-size: 0.9em;}
         #confirmManualBtn { background-color: #1a73e8; color: white; }
         #goToPreviewBtn {     background-color: #fbbc04;     color: #000;     margin-top: 20px; }
-        #goToHistoryBtn {     background-color: #5fc400;     color: #000;     margin-top: 8px; }
         #GeneratorBtn {     background-color: #5fc400;     color: #000;     margin-top: 8px; }
         #pracownikBtn {     background-color: #65d1db;     color: #000;     margin-top: 28px; }
         #kierownikBtn {     background-color: #ca8eed;     color: #000;     margin-top: 28px; }
-
-
 
         input { width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #dadce0; border-radius: 8px; font-size: 18px; box-sizing: border-box; }
         label { display: block; text-align: left; margin-top: 10px; color: #5f6368; font-weight: bold; }
 
         button:active { transform: scale(0.95); }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .button-spinner {animation: spin 1s linear infinite; vertical-align: middle; margin-left: 8px; width: 18px; height: 18px; }
     </style>
 </head>
 <body>
@@ -80,16 +82,13 @@
     <!-- Panel dolny -->
     <div class="section" id="bottom-controls">
         <button id="manualBtn">Wprowadź ręcznie</button>
-      <!--  <button id="goToHistoryBtn" onclick="window.location.href='podglad.html'">Pokaż przepracowane godziny</button>  -->
         <button id="goToPreviewBtn" onclick="window.location.href='ostatnie.html'">Pokaż ostatnie wpisy</button>
-     <!--   <button id="reportBtn">Pobierz RCP EXCEL</button>-->
-        <!-- Sekcja konfiguracji urządzenia -->
-<div class="admin-controls" style="margin-top: 15px;">
-<button id="GeneratorBtn" onclick="window.location.href='https://sewbej.github.io/QRcode-generator'">Generator QR</button>
-<button id="pracownikBtn" onclick="window.location.href='qrcode.jpeg'" >Zestawienie godzin (pracownik)</button>
-<button id="kierownikBtn" onclick="window.location.href='podglad.html'">Zestawienie godzin (kierownik)</button>
-    <button id="deviceIdBtn" class="btn-secondary">Identyfikator</button>
-</div>
+            <div class="admin-controls" style="margin-top: 15px;">
+                <button id="GeneratorBtn" onclick="window.location.href='https://sewbej.github.io/QRcode-generator'">Generator QR</button>
+                <button id="pracownikBtn" onclick="window.location.href='qrcode.jpeg'" >Zestawienie godzin (pracownik)</button>
+                <button id="kierownikBtn" onclick="window.location.href='podglad.html'">Zestawienie godzin (kierownik)</button>
+                <button id="deviceIdBtn" class="btn-secondary">Identyfikator</button>
+            </div>
         <div id="counter-display"><span id="row-count">0</span></div>
      <!--   <button id="clearBtn">Wyczyść całą pamięć</button>  -->
     </div>
@@ -128,33 +127,27 @@
         }
     }
 
-function applyRoundingTolerance(dateObj, actionType) {
-    const minutes = dateObj.getMinutes();
-    
-    if (actionType === "rozpoczecie") {
-        // Tolerancja dla ROZPOCZĘCIA: --:45 <-> --:05
-        if (minutes >= 45) {
-            // Np. 06:47 -> 07:00
-            dateObj.setHours(dateObj.getHours() + 1);
-            dateObj.setMinutes(0, 0, 0);
-        } else if (minutes <= 5) {
-            // Np. 07:04 -> 07:00
-            dateObj.setMinutes(0, 0, 0);
+    function applyRoundingTolerance(dateObj, actionType) {
+        const minutes = dateObj.getMinutes();
+        
+        if (actionType === "rozpoczecie") {
+            if (minutes >= 45) {
+                dateObj.setHours(dateObj.getHours() + 1);
+                dateObj.setMinutes(0, 0, 0);
+            } else if (minutes <= 5) {
+                dateObj.setMinutes(0, 0, 0);
+            }
+        } else if (actionType === "zakonczenie") {
+            if (minutes >= 55) {
+                dateObj.setHours(dateObj.getHours() + 1);
+                dateObj.setMinutes(0, 0, 0);
+            } else if (minutes <= 15) {
+                dateObj.setMinutes(0, 0, 0);
+            }
         }
-    } else if (actionType === "zakonczenie") {
-        // Tolerancja dla ZAKOŃCZENIA: --:55 <-> --:15
-        if (minutes >= 55) {
-            // Np. 14:57 -> 15:00
-            dateObj.setHours(dateObj.getHours() + 1);
-            dateObj.setMinutes(0, 0, 0);
-        } else if (minutes <= 15) {
-            // Np. 15:12 -> 15:00
-            dateObj.setMinutes(0, 0, 0);
-        }
+        
+        return dateObj;
     }
-    
-    return dateObj;
-}
 
     function resetUI() {
         const btn = document.getElementById('saveBtn');
@@ -162,12 +155,15 @@ function applyRoundingTolerance(dateObj, actionType) {
         btn.innerText = "Zatwierdź";
         btn.classList.remove('sending');
         
-        // Odblokowanie przycisku anulowania po zresetowaniu UI
         const cancelBtn = document.getElementById('cancelSaveBtn');
         if (cancelBtn) cancelBtn.disabled = false;
+
+        // Czyszczenie tymczasowej pamięci po udanym zapisie lub anulowaniu
+        localStorage.removeItem('pending_scan_code');
+        localStorage.removeItem('pending_scan_date');
+        localStorage.removeItem('pending_scan_is_return');
     }
 
-    // --- FUNKCJA AKTUALIZACJI ETYKIETY PRZYCISKU ---
     function updateDeviceButtonLabel() {
         const savedId = localStorage.getItem('app_device_id');
         const btn = document.getElementById('deviceIdBtn');
@@ -225,9 +221,13 @@ function applyRoundingTolerance(dateObj, actionType) {
             badge.className = "status-badge status-exit";
         }
 
+        // NOWOŚĆ: Zapisujemy ten stan do pamięci na wypadek błędu sieci i odświeżenia strony
+        localStorage.setItem('pending_scan_code', currentCode);
+        localStorage.setItem('pending_scan_date', currentFullDate.toISOString());
+        localStorage.setItem('pending_scan_is_return', isReturnAction ? "true" : "false");
+
         document.getElementById('result-display').innerText = currentCode;
         
-        // POPRAWKA: Konwersja daty na pełny format lokalny YYYY-MM-DDTHH:MM dla pola datetime-local
         const offset = currentFullDate.getTimezoneOffset() * 60000;
         const localISOTime = (new Date(currentFullDate.getTime() - offset)).toISOString().slice(0, 16);
         document.getElementById('time-display').value = localISOTime;
@@ -244,7 +244,6 @@ function applyRoundingTolerance(dateObj, actionType) {
         processEntry(decodedText, new Date());
     }
 
-    // --- OBSŁUGA USTAWIANIA IDENTYFIKATORA ---
     document.getElementById('deviceIdBtn').addEventListener('click', () => {
         const currentSaved = localStorage.getItem('app_device_id') || ""; 
         const inputId = prompt("Wprowadź identyfikator:", currentSaved);
@@ -255,15 +254,11 @@ function applyRoundingTolerance(dateObj, actionType) {
         updateDeviceButtonLabel();
     });
 
-    // Obsługa przycisku "Wprowadź ręcznie"
-// Obsługa przycisku "Wprowadź ręcznie"
     document.getElementById('manualBtn').addEventListener('click', () => {
         if(html5QrcodeScanner) html5QrcodeScanner.clear();
         document.getElementById('reader').classList.add('hidden');
         document.getElementById('bottom-controls').classList.add('hidden');
         document.getElementById('manual-section').classList.remove('hidden');
-        
-        // Czyścimy pole tekstowe na nazwisko przy każdym otwarciu panelu
         document.getElementById('manual-name').value = "";
     });
 
@@ -277,14 +272,10 @@ function applyRoundingTolerance(dateObj, actionType) {
             return; 
         }
         
-        // Zamiast czytać z pola, generujemy aktualną datę i godzinę "tu i teraz"
         const manualDate = new Date(); 
-        
-        // Przekazujemy dane do standardowego ekranu podsumowania (tam gdzie można to jeszcze edytować)
         processEntry(name, manualDate);
     });
 
-    // --- ANULOWANIE BŁĘDNEGO ZESKANOWANIA ---
     document.getElementById('cancelSaveBtn').addEventListener('click', () => {
         if (document.getElementById('manual-name')) {
             document.getElementById('manual-name').value = "";
@@ -294,7 +285,6 @@ function applyRoundingTolerance(dateObj, actionType) {
         startScanner();
     });
 
-    // --- GŁÓWNY LISTENER ZAPISU (Z WYSYŁANIEM ID URZĄDZENIA) ---
     document.getElementById('saveBtn').addEventListener('click', async () => {
         const btn = document.getElementById('saveBtn');
 
@@ -310,27 +300,20 @@ function applyRoundingTolerance(dateObj, actionType) {
             return;
         }
         
-        // Pobieramy wartość z pola edycji daty/czasu i nadpisujemy obiekt currentFullDate
         const editedTimestamp = document.getElementById('time-display').value;
         if (editedTimestamp) {
             currentFullDate = new Date(editedTimestamp);
-            
-            // Określamy typ akcji na podstawie zmiennej isReturnAction
             const akcja = isReturnAction ? "zakonczenie" : "rozpoczecie";
-            
-            // >>> WYWOŁUJEMY NOWĄ TOLERANCJĘ Z PARAMETREM AKCJI <<<
             currentFullDate = applyRoundingTolerance(currentFullDate, akcja);
-            
         } else {
             alert("❌ Proszę wprowadzić poprawną datę i godzinę.");
             return;
         }
 
         btn.disabled = true;
-        btn.innerText = "Wysyłanie...";
+        btn.innerHTML = `Wysyłanie... <svg class="button-spinner" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>`;
         btn.classList.add('sending');
         
-        // Blokada przycisku anulowania na czas wysyłania do bazy danych
         const cancelBtn = document.getElementById('cancelSaveBtn');
         if (cancelBtn) cancelBtn.disabled = true;
 
@@ -375,7 +358,6 @@ function applyRoundingTolerance(dateObj, actionType) {
                 return;
             }
 
-            // --- SUKCES: Autoryzacja i zapis przeszły pomyślnie ---
             if (isReturnAction) {
                 for (let i = logs.length - 1; i >= 0; i--) {
                     if (logs[i].kod === currentCode && logs[i].zakonczenieRaw === null) {
@@ -400,8 +382,6 @@ function applyRoundingTolerance(dateObj, actionType) {
             const modal = document.getElementById('successModal');
             modal.style.display = "flex";
 
-            //playSuccessSound();
-
             await new Promise((resolve) => {
                 document.getElementById('modalOkBtn').onclick = function() {
                     modal.style.display = "none";
@@ -415,11 +395,13 @@ function applyRoundingTolerance(dateObj, actionType) {
         } catch (err) {
             console.error("Szczegóły błędu:", err);
             if (err.name === "TypeError") {
-                alert("🔒 Brak autoryzacji!\nTwoje urządzenie nie zostało dodane do listy autoryzowanych urządzeń.");
+                // POPRAWKA: Informujemy o błędzie i odświeżamy. Pamięć podręczna zachowa dane!
+                alert("🌐 Błąd połączenia z serwerem!\nSkanowanie nie zostało zatwierdzone. Spróbuj ponownie.");
+                window.location.reload(); 
             } else {
-                alert("❌ Błąd połączenia internetowego. Spróbuj jeszcze raz.");
+                alert("❌ Błąd połączenia internetowego. Spróbuj ponownie.");
+                resetUI();
             }
-            resetUI();
         }
     });
 
@@ -434,5 +416,22 @@ function applyRoundingTolerance(dateObj, actionType) {
         return [h, m, s].map(v => v < 10 ? "0" + v : v).join(":");
     }
 
-    window.onload = startScanner;
+    // --- POPRAWIONA FUNKCJA INICJALIZACJI APLIKACJI ---
+    window.onload = function() {
+        updateRowCounter();
+        updateDeviceButtonLabel();
+
+        // Sprawdzamy, czy w pamięci urządzenia znajduje się "zawieszone" skanowanie sprzed odświeżenia
+        const savedPendingCode = localStorage.getItem('pending_scan_code');
+        const savedPendingDate = localStorage.getItem('pending_scan_date');
+        
+        if (savedPendingCode && savedPendingDate) {
+            // Jeśli znaleziono zawieszone dane, pomijamy aparat i od razu przywracamy widok formularza wysyłki
+            const parsedDate = new Date(savedPendingDate);
+            processEntry(savedPendingCode, parsedDate);
+        } else {
+            // Standardowy start skanera, jeśli pamięć jest czysta
+            startScanner();
+        }
+    };
 </script>

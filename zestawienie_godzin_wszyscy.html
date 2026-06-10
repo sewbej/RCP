@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zbiorcze Zestawienie Godzin Pracowników</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #e4e6e9;
+            color: #333;
+        }
+        .no-print-section {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .summary-table-section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+            margin-bottom: 40px;
+        }
+        .employee-section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+            margin-bottom: 40px;
+        }
+        .main-title {
+            font-size: 24px;
+            color: #000;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+        .employee-title {
+            font-size: 20px;
+            color: #000;
+            font-weight: bold;
+            border-top: none;
+            padding-top: 0px;
+            margin-top: 0px;
+            text-transform: uppercase;
+        }
+        .summary-banner {
+            background-color: #eee;
+            border: 0px solid #c8e6c9;
+            border-radius: 2px;
+            padding: 4px;
+            margin-bottom: 5px;
+            font-size: 15px;
+        }
+        .summary-banner strong {
+            color: #000;
+            font-size: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 16px;
+        }
+        th, td {
+            border: 1px solid #000;
+            padding: 3px;
+            text-align: center;
+        }
+        th {
+            background-color: #eee;
+            font-weight: bold;
+            color: #000;
+        }
+        tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        .btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-primary { background-color: #3498db; color: white; }
+
+        .print-btn { width: auto; padding: 6px 12px; background-color: #fff; color: #000; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 0 1px 1px rgba(0,0,0,0.6); margin-bottom: 15px; }
+        
+        .loader {
+            font-size: 18px;
+            font-weight: bold;
+            color: #34495e;
+            text-align: center;
+            padding: 40px;
+        }
+        .no-data {
+            color: #c0392b;
+            font-weight: bold;
+            text-align: center;
+            padding: 30px;
+        }
+
+        @media print {
+            .no-print-section {
+                display: none;
+            }
+            body {
+                background-color: white;
+                margin: 0;
+            }
+            .summary-table-section {
+                box-shadow: none;
+                padding: 0;
+                margin: 2px;
+                page-break-after: always;
+            }
+            .employee-section {
+                box-shadow: none;border: 2px solid #000; border-radius: 2px;
+                padding: 10px;
+                margin: 12px 2px;
+                 
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print-section">
+        <button class="btn print-btn" onclick="window.print()">🖨️ Drukuj / PDF</button>
+
+        <span id="topPeriodDisplay" style="font-weight: bold; margin-left: 20px;"></span>
+    </div>
+
+    <div id="loader" class="loader">Pobieranie i analizowanie danych wszystkich pracowników...</div>
+    <div id="results"></div>
+
+<script>
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfA6Ia_OP-gA1t5-COIvBSXN5IKrO3T9nFOQlY3z3zjg7j5iW4cFE9eOKqRILWfok/exec";
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const miesiac = urlParams.get('miesiac');
+    const rok = urlParams.get('rok');
+
+    function parseDateString(dateStr) {
+        if (!dateStr) return new Date(0);
+        const parts = dateStr.split('.');
+        if (parts.length === 3) {
+            return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+        }
+        return new Date(dateStr);
+    }
+
+    async function fetchAllEmployeesReport() {
+        const loader = document.getElementById('loader');
+        const resultsDiv = document.getElementById('results');
+        const topPeriodDisplay = document.getElementById('topPeriodDisplay');
+
+        if (!miesiac || !rok) {
+            resultsDiv.innerHTML = '<div class="no-data">Błąd: Brak zdefiniowanego okresu.</div>';
+            loader.style.display = "none";
+            return;
+        }
+
+        topPeriodDisplay.innerText = `Okres: ${miesiac} ${rok}`;
+
+        const savedDeviceId = localStorage.getItem('app_device_id') || "";
+        if (!savedDeviceId) {
+            resultsDiv.innerHTML = '<div class="no-data">Brak autoryzacji urządzenia w pamięci aplikacji.</div>';
+            loader.style.display = "none";
+            return;
+        }
+
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({
+                    action: "get_month_data",
+                    miesiac: miesiac,
+                    rok: rok,
+                    deviceId: savedDeviceId
+                })
+            });
+            
+            const data = await response.json();
+
+            if (data && data.status === "error") {
+                resultsDiv.innerHTML = `<div class="no-data">${data.message}</div>`;
+                return;
+            }
+
+            if (!Array.isArray(data) || data.length === 0) {
+                resultsDiv.innerHTML = `<div class="no-data">Brak jakichkolwiek danych RCP za okres: ${miesiac} ${rok}.</div>`;
+                return;
+            }
+
+            const pracownicy = {};
+
+            data.forEach(row => {
+                let nazwisko = row.nazwisko ? row.nazwisko.replace(/[0-9]/g, '').trim().toUpperCase() : "NIEZNANY";
+                if (!nazwisko) return;
+
+                if (!pracownicy[nazwisko]) {
+                    pracownicy[nazwisko] = {
+                        wpisy: [],
+                        unikalneDni: new Set(),
+                        sumaSformatowana: "0:00"
+                    };
+                }
+
+                const kluczDnia = `${nazwisko}_${row.data}`;
+                if (!pracownicy[nazwisko].unikalneDni.has(kluczDnia)) {
+                    pracownicy[nazwisko].unikalneDni.add(kluczDnia);
+                    pracownicy[nazwisko].wpisy.push(row);
+                }
+            });
+
+            const posortowaneNazwiska = Object.keys(pracownicy).sort();
+
+            if (posortowaneNazwiska.length === 0) {
+                resultsDiv.innerHTML = `<div class="no-data">Brak poprawnych danych pracowników.</div>`;
+                return;
+            }
+
+            posortowaneNazwiska.forEach(nazwisko => {
+                const danePracownika = pracownicy[nazwisko];
+                
+                danePracownika.wpisy.sort((a, b) => {
+                    return parseDateString(a.data) - parseDateString(b.data);
+                });
+
+                let sumaMinut = 0;
+                danePracownika.wpisy.forEach(row => {
+                    const cPracy = row.czas ? row.czas.trim() : "";
+                    if (cPracy !== "0:00" && cPracy !== "00:00" && cPracy !== "00:00:00" && cPracy !== "") {
+                        const czesci = cPracy.split(':');
+                        if (czesci.length >= 2) {
+                            sumaMinut += (parseInt(czesci[0], 10) || 0) * 60 + (parseInt(czesci[1], 10) || 0);
+                        }
+                    }
+                });
+
+                const h = Math.floor(sumaMinut / 60);
+                const m = (sumaMinut % 60).toString().padStart(2, '0');
+                danePracownika.sumaSformatowana = `${h}:${m}`;
+            });
+
+            // --- 1. STRONA TYTUŁOWA (TABELA ZBIORCZA Z DODANĄ KOLUMNĄ LP.) ---
+            let zbiorczyHtml = `
+                <div class="summary-table-section">
+                    <div class="main-title">Zestawienie godzin w miesiącu ${miesiac} ${rok}</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 60px;">lp.</th>
+                                <th style="text-align: left; padding-left: 15px;">imię i nazwisko</th>
+                                <th style="width: 200px;">suma godzin w miesiącu</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            // Zmienna inkrementująca liczbę porządkową
+            let lp = 1;
+            posortowaneNazwiska.forEach(nazwisko => {
+                zbiorczyHtml += `
+                    <tr>
+                        <td style="font-weight: bold; color: #000;">${lp++}.</td>
+                        <td style="text-align: left; padding-left: 15px; font-weight: bold;">${nazwisko}</td>
+                        <td style="font-size: 18px; font-weight: bold; color: #000;">${pracownicy[nazwisko].sumaSformatowana}</td>
+                    </tr>
+                `;
+            });
+
+            zbiorczyHtml += `</tbody></table></div>`;
+
+
+            // --- 2. KOLEJNE STRONY (SZCZEGÓŁY) ---
+            posortowaneNazwiska.forEach(nazwisko => {
+                const danePracownika = pracownicy[nazwisko];
+
+                zbiorczyHtml += `<div class="employee-section">
+                    <div class="employee-title">${nazwisko}</div>
+                    <div class="summary-banner">
+                        Suma godzin w miesiącu <strong>${miesiac} ${rok}</strong>: &nbsp;&nbsp;<strong>${danePracownika.sumaSformatowana} godz.</strong>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                
+                                <th>Data</th>
+                                <th>Rozpoczęcie</th>
+                                <th>Zakończenie</th>
+                                <th>Czas pracy</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+                danePracownika.wpisy.forEach(row => {
+                    const cPracy = row.czas ? row.czas.trim() : "";
+                    if (cPracy === "0:00" || cPracy === "00:00" || cPracy === "00:00:00") {
+                        zbiorczyHtml += `<tr style="color: #888;">
+                           
+                            <td>${row.data}</td>
+                            <td>---</td>
+                            <td>---</td>
+                            <td>---</td>
+                        </tr>`;
+                    } else {
+                        zbiorczyHtml += `<tr>
+                            
+                            <td data-t="s">${row.data}</td>
+                            <td>${row.rozpoczecie}</td>
+                            <td>${row.zakonczenie}</td>
+                            <td><strong>${cPracy}</strong></td>
+                        </tr>`;
+                    }
+                });
+
+                zbiorczyHtml += `</tbody></table></div>`;
+            });
+
+            resultsDiv.innerHTML = zbiorczyHtml;
+
+        } catch (error) {
+            console.error(error);
+            resultsDiv.innerHTML = '<div class="no-data">Błąd połączenia z bazą danych Google.</div>';
+        } finally {
+            loader.style.display = "none";
+        }
+    }
+
+    window.onload = fetchAllEmployeesReport;
+</script>
+</body>
+</html>

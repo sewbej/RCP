@@ -7,10 +7,10 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             margin: 20px;
             background-color: #e4e6e9;
-            color: #333;
+            color: #000;
         }
         .no-print-section {
             background: white;
@@ -60,6 +60,7 @@
             padding: 4px;
             margin-bottom: 5px;
             font-size: 15px;
+            text-transform: lowercase;
         }
         .summary-banner strong {
             color: #000;
@@ -73,12 +74,12 @@
         }
         th, td {
             border: 1px solid #000;
-            padding: 3px;
+            padding: 0px;
             text-align: center;
         }
         th {
             background-color: #eee;
-            font-weight: bold;
+            font-weight: normal;
             color: #000;
         }
         tr:nth-child(even) {
@@ -92,9 +93,20 @@
             cursor: pointer;
             font-weight: bold;
         }
-        .btn-primary { background-color: #3498db; color: white; }
 
-        .print-btn { width: auto; padding: 6px 12px; background-color: #fff; color: #000; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 0 1px 1px rgba(0,0,0,0.6); margin-bottom: 15px; }
+        .print-btn {
+            width: auto;
+            padding: 6px 12px;
+            background-color: #fff;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 0 1px 1px rgba(0,0,0,0.6);
+            margin-bottom: 15px; }
         
         .loader {
             font-size: 18px;
@@ -124,9 +136,15 @@
                 margin: 2px;
                 page-break-after: always;
             }
+            .summary-banner {
+                padding: 0;
+                margin: 0;
+            }
             .employee-section {
-                box-shadow: none;border: 2px solid #000; border-radius: 2px;
-                padding: 10px;
+                box-shadow: none;
+                border: 2px solid #000;
+                border-radius: 2px;
+                padding: 2px 6px 6px 6px;
                 margin: 12px 2px;
                  
             }
@@ -236,6 +254,9 @@
                 return;
             }
 
+// --- NAJPIERW PRZELICZAMY SUMY DLA KAŻDEGO PRACOWNIKA ---
+            let globalnaSumaMinut = 0; // <--- DODAJ TĘ LINIĘ
+
             posortowaneNazwiska.forEach(nazwisko => {
                 const danePracownika = pracownicy[nazwisko];
                 
@@ -254,10 +275,18 @@
                     }
                 });
 
+                globalnaSumaMinut += sumaMinut; // <--- DODAJ TĘ LINIĘ (akumulacja minut)
+
                 const h = Math.floor(sumaMinut / 60);
                 const m = (sumaMinut % 60).toString().padStart(2, '0');
                 danePracownika.sumaSformatowana = `${h}:${m}`;
             });
+
+            // Formatowanie globalnej sumy na postać H:MM
+            const globalneH = Math.floor(globalnaSumaMinut / 60);
+            const globalneM = (globalnaSumaMinut % 60).toString().padStart(2, '0');
+            const sformatowanaGlobalnaSuma = `${globalneH}:${globalneM}`; // <--- DODAJ TĘ LINIĘ
+            
 
             // --- 1. STRONA TYTUŁOWA (TABELA ZBIORCZA Z DODANĄ KOLUMNĄ LP.) ---
             let zbiorczyHtml = `
@@ -268,7 +297,7 @@
                             <tr>
                                 <th style="width: 60px;">lp.</th>
                                 <th style="text-align: left; padding-left: 15px;">imię i nazwisko</th>
-                                <th style="width: 200px;">suma godzin w miesiącu</th>
+                                <th style="width: 200px;">ilość godzin w miesiącu</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -279,12 +308,21 @@
             posortowaneNazwiska.forEach(nazwisko => {
                 zbiorczyHtml += `
                     <tr>
-                        <td style="font-weight: bold; color: #000;">${lp++}.</td>
-                        <td style="text-align: left; padding-left: 15px; font-weight: bold;">${nazwisko}</td>
+                        <td style="font-weight: normal; color: #000;">${lp++}.</td>
+                        <td style="text-align: left; padding-left: 15px; font-weight: normal;">${nazwisko}</td>
                         <td style="font-size: 18px; font-weight: bold; color: #000;">${pracownicy[nazwisko].sumaSformatowana}</td>
                     </tr>
                 `;
             });
+
+// --- NOWOŚĆ: DODAJ TEN BLOK (Wiersz z podsumowaniem wszystkich godzin) ---
+            zbiorczyHtml += `
+                    <tr style="background-color: #fff; font-weight: bold;">
+                        <td style="border: none;"</td>
+                        <td style="text-align: right; padding-right: 15px; text-transform: uppercase; font-size: 15px; border: none;">SUMA:</td>
+                        <td style="font-size: 20px; color: #000; border: none; border-top: 3px solid #000;">${sformatowanaGlobalnaSuma}</td>
+                    </tr>
+            `;
 
             zbiorczyHtml += `</tbody></table></div>`;
 
@@ -296,16 +334,16 @@
                 zbiorczyHtml += `<div class="employee-section">
                     <div class="employee-title">${nazwisko}</div>
                     <div class="summary-banner">
-                        Suma godzin w miesiącu <strong>${miesiac} ${rok}</strong>: &nbsp;&nbsp;<strong>${danePracownika.sumaSformatowana} godz.</strong>
+                        Ilość godzin w miesiącu ${miesiac} ${rok}: &nbsp;&nbsp;<strong>${danePracownika.sumaSformatowana}</strong> godz.
                     </div>
                     <table>
                         <thead>
                             <tr>
                                 
-                                <th>Data</th>
-                                <th>Rozpoczęcie</th>
-                                <th>Zakończenie</th>
-                                <th>Czas pracy</th>
+                                <th>data</th>
+                                <th>rozpoczęcie</th>
+                                <th>zakończenie</th>
+                                <th>czas pracy</th>
                             </tr>
                         </thead>
                         <tbody>`;
@@ -338,7 +376,7 @@
 
         } catch (error) {
             console.error(error);
-            resultsDiv.innerHTML = '<div class="no-data">Błąd połączenia z bazą danych Google.</div>';
+            resultsDiv.innerHTML = '<div class="no-data">Błąd połączenia z bazą danych.</div>';
         } finally {
             loader.style.display = "none";
         }

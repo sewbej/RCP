@@ -160,21 +160,30 @@
     }
 
     // --- FUNKCJA GENEROWANIA I POBIERANIA PLIKU PDF ---
+// --- POPRAWIONA FUNKCJA GENEROWANIA PLIKU PDF DLA SMARTFONÓW ---
     function generatePDF() {
         const element = document.getElementById('pdf-content');
         const d = new Date();
         const sformatowanaData = d.toLocaleDateString('pl-PL').replace(/\./g, '-');
         
-        // Konfiguracja wyglądu pliku PDF
+        // Konfiguracja eliminująca obcinanie dołu na telefonach
         const opt = {
-            margin:       6,
-            filename:     `Frekfencja_${sformatowanaData}.pdf`,
-            image:        { type: 'jpeg', quality: 0.70 },
-            html2canvas:  { scale: 2, useCORS: true },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            margin:       10,
+            filename:     `RCP_Raport_2dni_${sformatowanaData}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { 
+                scale: 2, 
+                useCORS: true,
+                logging: false,
+                letterRendering: true,
+                scrollY: 0,           // Resetuje przewinięcie ekranu telefonu
+                windowWidth: 750      // Wymusza stałą szerokość okna renderu (jak na PC)
+            },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } // Zapobiega przecinaniu wierszy i ucinaniu dołu
         };
 
-        // Wywołanie zapisu do folderu Pobrane
+        // Wywołanie bezpiecznego zapisu
         html2pdf().set(opt).from(element).save();
     }
 

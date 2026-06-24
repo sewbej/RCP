@@ -4,65 +4,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RCP - Ostatnie Wpisy</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; padding: 5px; max-width: 700px; margin: auto; background-color: #ffffff; }
         .card { background: white; padding: 6px; border-radius: 12px; box-shadow: 0 0 1px 1px rgba(0,0,0,0.6); }
-        h5 { text-align: center; color: #000; margin: 0; }
+        h5 { text-align: center; color: #000; margin: 0 0 5px 0; font-size: 16px; text-transform: uppercase; }
         
-        button { width: 100%; padding: 5px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 10px; }
-        .btn-refresh { background-color: #1a73e8; color: white; }
+        button { width: 100%; padding: 8px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+        .btn-pdf { background-color: #e06666; color: white; box-shadow: 1px 2px 4px rgba(0,0,0,0.3); }
         button:active { transform: scale(0.98); }
         button:disabled { background-color: #ccc; }
 
         #loader { text-align: center; margin: 20px 0; color: #000; font-weight: bold; }
         
         .results-container { margin-top: 5px; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; font-size: 16px; }
-        th { background-color: #ffffff; color: #000000; font-weight: bold; padding-top: 6px; border-bottom: 1px solid #444; text-align: center; font-size: 14px;}
-        td { padding: 2px; border-bottom: 1px solid #444; border-left: 1px solid #ccc; color: #000; text-align: center;}
-        tr:last-child, td:last-child { border-right: 1px solid #ccc; }
-        .no-data { text-align: center; padding: 20px; color: #999; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 2px; overflow: hidden; font-size: 14px; }
+        th { background-color: #f1f1f1; color: #000000; font-weight: bold; padding: 6px 4px; border: 1px solid #444; text-align: center; font-size: 13px;}
+        td { padding: 2px; border: 1px solid #444; color: #000; text-align: center;}
+        .no-data { text-align: center; padding: 20px; color: #999; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h5>30 ostatnich wpisów</h5>
-        
-        <button class="btn-refresh" id="refreshBtn" onclick="fetchRecentEntries()">ODŚWIEŻ LISTĘ</button>
-        
-        <div id="loader">Pobieranie danych...</div>
+        <div id="pdf-content">
+            <h5>Frekfencja z ostatnich 2 dni</h5>
+            
+            <div id="loader">Pobieranie danych...</div>
 
-        <div id="results" class="results-container">
-            <!-- Tabela wygeneruje się tutaj automatycznie -->
+            <div id="results" class="results-container">
+                </div>
         </div>
 
+        <button class="btn-pdf" id="pdfBtn" onclick="generatePDF()" disabled>ZAPISZ PDF</button>
     </div>
 
 <script>
-    // --- TU WKLEJ SWÓJ LINK DO GOOGLE SCRIPT ---
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfA6Ia_OP-gA1t5-COIvBSXN5IKrO3T9nFOQlY3z3zjg7j5iW4cFE9eOKqRILWfok/exec";
 
+    // Pomocnicza funkcja parsująca datę w formacie "DD.MM.YYYY" na obiekt Date
+    function parseDate(dateStr) {
+        if (!dateStr) return new Date(0);
+        const parts = dateStr.split('.');
+        if (parts.length === 3) {
+            return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+        }
+        return new Date(dateStr);
+    }
+
     async function fetchRecentEntries() {
-        const btn = document.getElementById('refreshBtn');
         const loader = document.getElementById('loader');
         const resultsDiv = document.getElementById('results');
+        const pdfBtn = document.getElementById('pdfBtn');
 
-        btn.disabled = true;
         loader.style.display = "block";
         resultsDiv.innerHTML = "";
+        pdfBtn.disabled = true;
 
-        // POBIERANIE Z PAMIĘCI URZĄDZENIA: Szukamy klucza o nazwie 'app_device_id'
         const savedDeviceId = localStorage.getItem('app_device_id') || "";
 
-        // Jeśli pamięć jest pusta, przerywamy i prosimy o autoryzację
         if (!savedDeviceId) {
             resultsDiv.innerHTML = `
-                <div class="no-data" style="color: #d9534f; font-weight: bold; padding: 20px;">
+                <div class="no-data" style="color: #d9534f; padding: 20px;">
                     Brak identyfikatora urządzenia!<br>
                     <small style="color: #666; font-weight: normal;">Zautoryzuj urządzenie w panelu głównym aplikacji.</small>
                 </div>`;
-            btn.disabled = false;
             loader.style.display = "none";
             return;
         }
@@ -73,61 +79,103 @@
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify({ 
                     action: "get_recent",
-                    deviceId: savedDeviceId // Dynamicznie wstrzyknięty klucz z pamięci telefonu
+                    deviceId: savedDeviceId 
                 })
             });
             
             const data = await response.json();
 
-            // Obsługa błędu autoryzacji zwróconego z Google Apps Script
             if (data && data.status === "error") {
-                resultsDiv.innerHTML = `<div class="no-data" style="color: red; font-weight: bold;">${data.message}</div>`;
+                resultsDiv.innerHTML = `<div class="no-data" style="color: red;">${data.message}</div>`;
                 return;
             }
 
             if (!Array.isArray(data) || data.length === 0) {
                 resultsDiv.innerHTML = '<div class="no-data">Brak jakichkolwiek wpisów w arkuszu.</div>';
-            } else {
-                let html = `<table>
-                    <thead>
-                        <tr>
-                            <th>nazwisko</th>
-                            <th>data</th>
-                            <th>rozpoczęcie</th>
-                            <th>zakończenie</th>
-                            <th>czas_pracy</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-                
-                const wyswietloneWpisy = new Set();
+                return;
+            }
 
-                data.forEach(row => {
+            // --- OBLICZANIE GRANICY OSTATNICH 2 DNI ---
+            const dzis = new Date();
+            dzis.setHours(0, 0, 0, 0);
+            
+            const granica2Dni = new Date(dzis);
+            granica2Dni.setDate(dzis.getDate() - 1); // Dzisiaj oraz wczoraj = ostatnie 2 dni
+
+            // Sortujemy pobrane dane od najnowszych
+            data.sort((a, b) => parseDate(b.data) - parseDate(a.data));
+
+            let html = `<table>
+                <thead>
+                    <tr>
+                        <th style="text-align: left; padding-left: 5px;">nazwisko</th>
+                        <th>data</th>
+                        <th>rozpoczęcie</th>
+                        <th>zakończenie</th>
+                        <th>czas pracy</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            const wyswietloneWpisy = new Set();
+            let licznikRekordow = 0;
+
+            data.forEach(row => {
+                const dataWpisu = parseDate(row.data);
+                
+                // FILTR: Przepuszczamy tylko wpisy z wczoraj i dzisiaj
+                if (dataWpisu >= granica2Dni) {
                     const kluczDnia = `${row.nazwisko.trim().toLowerCase()}_${row.data}`;
 
                     if (!wyswietloneWpisy.has(kluczDnia)) {
                         wyswietloneWpisy.add(kluczDnia);
+                        licznikRekordow++;
 
                         html += `<tr>
-                            <td style="font-weight: normal; color: #000; text-align: left">${row.nazwisko}</td>
+                            <td style="font-weight: normal; text-align: left; padding-left: 5px;">${row.nazwisko}</td>
                             <td>${row.data}</td>
-                            <td>${row.rozpoczecie}</td>
-                            <td>${row.zakonczenie}</td>
-                            <td>${row.czas}</td>
+                            <td>${row.rozpoczecie || '---'}</td>
+                            <td>${row.zakonczenie || '---'}</td>
+                            <td><strong>${row.czas || '---'}</strong></td>
                         </tr>`;
                     }
-                });
+                }
+            });
 
-                html += '</tbody></table>';
+            html += '</tbody></table>';
+
+            if (licznikRekordow === 0) {
+                resultsDiv.innerHTML = '<div class="no-data">Brak wpisów z ostatnich 2 dni.</div>';
+            } else {
                 resultsDiv.innerHTML = html;
+                pdfBtn.disabled = false; // Włączamy przycisk PDF tylko gdy są dane
             }
+            
         } catch (error) {
             console.error(error);
             resultsDiv.innerHTML = '<div class="no-data" style="color: red;">Błąd połączenia ze skryptem Google.</div>';
         } finally {
-            btn.disabled = false;
             loader.style.display = "none";
         }
+    }
+
+    // --- FUNKCJA GENEROWANIA I POBIERANIA PLIKU PDF ---
+    function generatePDF() {
+        const element = document.getElementById('pdf-content');
+        const d = new Date();
+        const sformatowanaData = d.toLocaleDateString('pl-PL').replace(/\./g, '-');
+        
+        // Konfiguracja wyglądu pliku PDF
+        const opt = {
+            margin:       6,
+            filename:     `Frekfencja_${sformatowanaData}.pdf`,
+            image:        { type: 'jpeg', quality: 0.70 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        // Wywołanie zapisu do folderu Pobrane
+        html2pdf().set(opt).from(element).save();
     }
 
     window.onload = fetchRecentEntries;

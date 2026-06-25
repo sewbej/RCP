@@ -348,25 +348,21 @@
                         </thead>
                         <tbody>`;
 
-                danePracownika.wpisy.forEach(row => {
+            danePracownika.wpisy.forEach(row => {
                     const cPracy = row.czas ? row.czas.trim() : "";
-                    if (cPracy === "0:00" || cPracy === "00:00" || cPracy === "00:00:00") {
-                        zbiorczyHtml += `<tr style="color: #888;">
-                           
-                            <td>${row.data}</td>
-                            <td>---</td>
-                            <td>---</td>
-                            <td>---</td>
-                        </tr>`;
-                    } else {
-                        zbiorczyHtml += `<tr>
-                            
-                            <td data-t="s">${row.data}</td>
-                            <td>${row.rozpoczecie}</td>
-                            <td>${row.zakonczenie}</td>
-                            <td><strong>${cPracy}</strong></td>
-                        </tr>`;
+                    
+                    // WARUNEK: Jeśli czas wynosi 0:00, pomiń ten dzień i przejdź do kolejnego
+                    if (cPracy === "0:00" || cPracy === "00:00" || cPracy === "00:00:00" || cPracy === "") {
+                        return; 
                     }
+
+                    // Wyświetlamy tylko te dni, w których czas pracy jest większy niż zero
+                    zbiorczyHtml += `<tr>
+                        <td data-t="s">${row.data}</td>
+                        <td>${row.rozpoczecie}</td>
+                        <td>${row.zakonczenie}</td>
+                        <td><strong>${cPracy}</strong></td>
+                    </tr>`;
                 });
 
                 zbiorczyHtml += `</tbody></table></div>`;

@@ -11,7 +11,7 @@
         h5 { text-align: center; color: #000; margin: 0 0 5px 0; font-size: 16px; text-transform: uppercase; }
         
         button { width: 100%; padding: 8px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 10px; }
-        .btn-pdf { background-color: #e06666; color: white; box-shadow: 1px 2px 4px rgba(0,0,0,0.3); }
+        .btn-pdf { background-color: #28a745; color: white; box-shadow: 1px 2px 4px rgba(0,0,0,0.3); margin: 12px 0 12px 0; font-size: 20px}
         button:active { transform: scale(0.98); }
         button:disabled { background-color: #ccc; }
 
@@ -120,8 +120,14 @@
             const wyswietloneWpisy = new Set();
             let licznikRekordow = 0;
 
-            data.forEach(row => {
+data.forEach(row => {
                 const dataWpisu = parseDate(row.data);
+                const cPracy = row.czas ? row.czas.trim() : ""; // Pobieramy i oczyszczamy czas pracy
+
+                // NOWY WARUNEK: Jeśli czas to 0:00, 00:00 lub jest pusty – pomiń ten wiersz (idź do następnego)
+                if (cPracy === "0:00" || cPracy === "00:00" || cPracy === "00:00:00" || cPracy === "") {
+                    return; 
+                }
                 
                 // FILTR: Przepuszczamy tylko wpisy z wczoraj i dzisiaj
                 if (dataWpisu >= granica2Dni) {
@@ -132,11 +138,11 @@
                         licznikRekordow++;
 
                         html += `<tr>
-                            <td style="font-weight: normal; text-align: left; padding-left: 5px;">${row.nazwisko}</td>
+                            <td style="font-weight: bold; text-align: left; padding-left: 5px;">${row.nazwisko}</td>
                             <td>${row.data}</td>
                             <td>${row.rozpoczecie || '---'}</td>
                             <td>${row.zakonczenie || '---'}</td>
-                            <td><strong>${row.czas || '---'}</strong></td>
+                            <td><strong>${cPracy}</strong></td>
                         </tr>`;
                     }
                 }

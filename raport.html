@@ -148,15 +148,12 @@
                         wyswietloneWpisy.add(kluczDnia); // Blokujemy ten dzień dla tego pracownika
 
                         const cPracy = row.czas ? row.czas.trim() : "";
-                        if (cPracy === "0:00" || cPracy === "00:00" || cPracy === "00:00:00") {
-                            html += `<tr style="color: #888;">
-                                <td style="font-weight: normal; color: #000; text-align: left">${row.nazwisko.replace(/[0-9]/g, '')}</td>
-                                <td>${row.data}</td>
-                                <td>---</td>
-                                <td>---</td>
-                                <td>---</td>
-                            </tr>`;
-                        } else {
+                    // WARUNEK: Jeśli czas wynosi 0:00, pomiń ten dzień i przejdź do kolejnego
+                    if (cPracy === "0:00" || cPracy === "00:00" || cPracy === "00:00:00" || cPracy === "") {
+                        return; 
+                    }
+
+                    // Wyświetlamy tylko te dni, w których czas pracy jest większy niż zero
                             html += `<tr>
                                 <td style="font-weight: normal; color: #000; text-align: left">${row.nazwisko.replace(/[0-9]/g, '')}</td>
                                 <td data-t="s">${row.data}</td>
@@ -164,7 +161,6 @@
                                 <td>${row.zakonczenie}</td>
                                 <td>${cPracy}</td>
                             </tr>`;
-                        }
                     }
                 });
 

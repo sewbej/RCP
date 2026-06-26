@@ -28,7 +28,7 @@
 
     <div class="card">
         <div id="pdf-content">
-            <h5>Frekfencja z ostatnich 2 dni</h5>
+            <h5>Frekwencja z ostatnich 2 dni</h5>
             
             <div id="loader">Pobieranie danych...</div>
 
@@ -175,7 +175,7 @@ data.forEach(row => {
         // Konfiguracja eliminująca obcinanie dołu na telefonach
         const opt = {
             margin:       2,
-            filename:     `Frekfencja_${sformatowanaData}.pdf`,
+            filename:     `Frekwencja_${sformatowanaData}.pdf`,
             image:        { type: 'jpeg', quality: 0.7 },
             html2canvas:  { 
                 scale: 2, 

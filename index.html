@@ -131,7 +131,7 @@
         const minutes = dateObj.getMinutes();
         
         if (actionType === "rozpoczecie") {
-            if (minutes >= 45) {
+            if (minutes >= 55) {
                 dateObj.setHours(dateObj.getHours() + 1);
                 dateObj.setMinutes(0, 0, 0);
             } else if (minutes <= 5) {
@@ -141,7 +141,7 @@
             if (minutes >= 55) {
                 dateObj.setHours(dateObj.getHours() + 1);
                 dateObj.setMinutes(0, 0, 0);
-            } else if (minutes <= 15) {
+            } else if (minutes <= 5) {
                 dateObj.setMinutes(0, 0, 0);
             }
         }

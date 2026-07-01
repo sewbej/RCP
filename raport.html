@@ -149,7 +149,7 @@
 
                         const cPracy = row.czas ? row.czas.trim() : "";
                     // WARUNEK: Jeśli czas wynosi 0:00, pomiń ten dzień i przejdź do kolejnego
-                    if (cPracy === "0:00" || cPracy === "00:00" || cPracy === "00:00:00" || cPracy === "") {
+                    if (cPracy === "0:00" || cPracy === "00:00" || cPracy === "00:00:00" || cPracy === "" || cPracy === "#VALUE!") {
                         return; 
                     }
 

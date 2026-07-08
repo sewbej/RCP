@@ -124,10 +124,20 @@ data.forEach(row => {
                 const dataWpisu = parseDate(row.data);
                 const cPracy = row.czas ? row.czas.trim() : ""; // Pobieramy i oczyszczamy czas pracy
 
-                // NOWY WARUNEK: Jeśli czas to 0:00, 00:00 lub jest pusty – pomiń ten wiersz (idź do następnego)
-                if (cPracy === "0:00" || cPracy === "00:00" || cPracy === "00:00:00" || cPracy === "") {
-                    return; 
-                }
+                    // WYJĄTEK: Jeśli praca trwa i czas to "---", NIE pomijaj – przejdź do wyświetlania
+                    if (cPracy !== "---") {
+                        // Zamiana czasu "HH:MM" na minuty dla zakończonych wpisów
+                        const czesci = cPracy.split(':');
+                        let minuty = 0;
+                        if (czesci.length >= 2) {
+                            minuty = (parseInt(czesci[0], 10) || 0) * 60 + (parseInt(czesci[1], 10) || 0);
+                        }
+
+                        // WARUNEK 2: Pomijaj zakończone wpisy krótsze niż 15 minut (w tym 0:00)
+                        if (minuty < 15) {
+                            return;
+                        }
+                    }
                 
                 // FILTR: Przepuszczamy tylko wpisy z wczoraj i dzisiaj
                 if (dataWpisu >= granica2Dni) {

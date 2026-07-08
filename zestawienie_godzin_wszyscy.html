@@ -255,7 +255,7 @@
             }
 
 // --- NAJPIERW PRZELICZAMY SUMY DLA KAŻDEGO PRACOWNIKA ---
-            let globalnaSumaMinut = 0; // <--- DODAJ TĘ LINIĘ
+            let globalnaSumaMinut = 0;
 
             posortowaneNazwiska.forEach(nazwisko => {
                 const danePracownika = pracownicy[nazwisko];
@@ -267,15 +267,24 @@
                 let sumaMinut = 0;
                 danePracownika.wpisy.forEach(row => {
                     const cPracy = row.czas ? row.czas.trim() : "";
-                    if (cPracy !== "0:00" && cPracy !== "00:00" && cPracy !== "00:00:00" && cPracy !== "") {
+
+                    // Pomijamy puste wpisy, błędy formuły oraz niezakończone "---"
+                    if (cPracy !== "" && cPracy !== "#VALUE!" && cPracy !== "---") {
                         const czesci = cPracy.split(':');
                         if (czesci.length >= 2) {
-                            sumaMinut += (parseInt(czesci[0], 10) || 0) * 60 + (parseInt(czesci[1], 10) || 0);
+                            const godziny = parseInt(czesci[0], 10) || 0;
+                            const minuty = parseInt(czesci[1], 10) || 0;
+                            const minutyWpisu = (godziny * 60) + minuty;
+
+                            // Dodajemy do sumy TYLKO wpisy trwające co najmniej 15 minut
+                            if (minutyWpisu >= 15) {
+                                sumaMinut += minutyWpisu;
+                            }
                         }
                     }
                 });
 
-                globalnaSumaMinut += sumaMinut; // <--- DODAJ TĘ LINIĘ (akumulacja minut)
+                globalnaSumaMinut += sumaMinut;
 
                 const h = Math.floor(sumaMinut / 60);
                 const m = (sumaMinut % 60).toString().padStart(2, '0');
@@ -351,9 +360,24 @@
             danePracownika.wpisy.forEach(row => {
                     const cPracy = row.czas ? row.czas.trim() : "";
                     
-                    // WARUNEK: Jeśli czas wynosi 0:00, pomiń ten dzień i przejdź do kolejnego
-                    if (cPracy === "0:00" || cPracy === "00:00" || cPracy === "00:00:00" || cPracy === "" || cPracy === "#VALUE!") {
-                        return; 
+                     // WARUNEK 1: Pomijaj puste wpisy oraz błędy formuły Excela (ale NIE pomijaj "---")
+                    if (cPracy === "" || cPracy === "#VALUE!") {
+                        return;
+                    }
+
+                    // WYJĄTEK: Jeśli praca trwa i czas to "---", NIE pomijaj – przejdź do wyświetlania
+                    if (cPracy !== "---") {
+                        // Zamiana czasu "HH:MM" na minuty dla zakończonych wpisów
+                        const czesci = cPracy.split(':');
+                        let minuty = 0;
+                        if (czesci.length >= 2) {
+                            minuty = (parseInt(czesci[0], 10) || 0) * 60 + (parseInt(czesci[1], 10) || 0);
+                        }
+
+                        // WARUNEK 2: Pomijaj zakończone wpisy krótsze niż 15 minut (w tym 0:00)
+                        if (minuty < 15) {
+                            return;
+                        }
                     }
 
                     // Wyświetlamy tylko te dni, w których czas pracy jest większy niż zero

@@ -277,7 +277,7 @@
                             const minutyWpisu = (godziny * 60) + minuty;
 
                             // Dodajemy do sumy TYLKO wpisy trwające co najmniej 15 minut
-                            if (minutyWpisu >= 15) {
+                            if (minutyWpisu >= 55) {
                                 sumaMinut += minutyWpisu;
                             }
                         }
@@ -374,8 +374,8 @@
                             minuty = (parseInt(czesci[0], 10) || 0) * 60 + (parseInt(czesci[1], 10) || 0);
                         }
 
-                        // WARUNEK 2: Pomijaj zakończone wpisy krótsze niż 15 minut (w tym 0:00)
-                        if (minuty < 15) {
+                        // WARUNEK 2: Pomijaj zakończone wpisy krótsze niż 55 minut (w tym 0:00)
+                        if (minuty < 55) {
                             return;
                         }
                     }

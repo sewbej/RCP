@@ -133,8 +133,8 @@ data.forEach(row => {
                             minuty = (parseInt(czesci[0], 10) || 0) * 60 + (parseInt(czesci[1], 10) || 0);
                         }
 
-                        // WARUNEK 2: Pomijaj zakończone wpisy krótsze niż 55 minut (w tym 0:00)
-                        if (minuty < 55) {
+                        // WARUNEK 2: Pomijaj zakończone wpisy krótsze niż 9 minut (w tym 0:00)
+                        if (minuty < 9) {
                             return;
                         }
                     }

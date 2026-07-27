@@ -109,8 +109,8 @@
                                 const minuty = parseInt(czesci[1], 10) || 0;
                                 const minutyWpisu = (godziny * 60) + minuty;
 
-                                // Doliczamy do sumy TYLKO wpisy, które trwają minimum 15 minut
-                                if (minutyWpisu >= 55) {
+                                // Doliczamy do sumy TYLKO wpisy, które trwają minimum 9 minut
+                                if (minutyWpisu >= 9) {
                                     calkowityCzasWMinutach += minutyWpisu;
                                 }
                             }
@@ -169,8 +169,8 @@
                             minuty = (parseInt(czesci[0], 10) || 0) * 60 + (parseInt(czesci[1], 10) || 0);
                         }
 
-                        // WARUNEK 2: Pomijaj zakończone wpisy krótsze niż 55 minut (w tym 0:00)
-                        if (minuty < 55) {
+                        // WARUNEK 2: Pomijaj zakończone wpisy krótsze niż 9 minut (w tym 0:00)
+                        if (minuty < 9) {
                             return;
                         }
                     }

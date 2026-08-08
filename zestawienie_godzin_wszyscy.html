@@ -254,7 +254,7 @@
                 return;
             }
 
-// --- NAJPIERW PRZELICZAMY SUMY DLA KAŻDEGO PRACOWNIKA ---
+            // --- NAJPIERW PRZELICZAMY SUMY DLA KAŻDEGO PRACOWNIKA ---
             let globalnaSumaMinut = 0;
 
             posortowaneNazwiska.forEach(nazwisko => {
@@ -284,11 +284,20 @@
                     }
                 });
 
+            // Zapisujemy policzoną sumę w minutach w obiekcie pracownika
+                danePracownika.sumaMinutLiczba = sumaMinut; 
+
                 globalnaSumaMinut += sumaMinut;
 
                 const h = Math.floor(sumaMinut / 60);
                 const m = (sumaMinut % 60).toString().padStart(2, '0');
                 danePracownika.sumaSformatowana = `${h}:${m}`;
+            });
+
+            // --- FILTROWANIE PRACOWNIKÓW ---
+            // Zostawiamy tylko tych, którzy przepracowali więcej niż 0 minut
+            const aktywniPracownicy = posortowaneNazwiska.filter(nazwisko => {
+                return pracownicy[nazwisko].sumaMinutLiczba > 0;
             });
 
             // Formatowanie globalnej sumy na postać H:MM
@@ -314,7 +323,7 @@
 
             // Zmienna inkrementująca liczbę porządkową
             let lp = 1;
-            posortowaneNazwiska.forEach(nazwisko => {
+            aktywniPracownicy.forEach(nazwisko => {
                 zbiorczyHtml += `
                     <tr>
                         <td style="font-weight: normal; color: #000;">${lp++}.</td>
@@ -324,7 +333,7 @@
                 `;
             });
 
-// --- NOWOŚĆ: DODAJ TEN BLOK (Wiersz z podsumowaniem wszystkich godzin) ---
+            // --- Wiersz z podsumowaniem wszystkich godzin ---
             zbiorczyHtml += `
                     <tr style="background-color: #fff; font-weight: bold;">
                         <td style="border: none;"</td>
@@ -337,7 +346,7 @@
 
 
             // --- 2. KOLEJNE STRONY (SZCZEGÓŁY) ---
-            posortowaneNazwiska.forEach(nazwisko => {
+            aktywniPracownicy.forEach(nazwisko => {
                 const danePracownika = pracownicy[nazwisko];
 
                 zbiorczyHtml += `<div class="employee-section">

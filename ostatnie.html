@@ -10,6 +10,18 @@
         .card { background: white; padding: 6px; border-radius: 12px; box-shadow: 0 0 1px 1px rgba(0,0,0,0.6); }
         h5 { text-align: center; color: #000; margin: 0 0 5px 0; font-size: 16px; text-transform: uppercase; }
         
+        .active-counter {
+            background-color: #eeeeee;
+            color: #000;
+            border: 1px solid #c8c6c9;
+            padding: 8px 12px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: normal;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
         button { width: 100%; padding: 8px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 10px; }
         .btn-pdf { background-color: #28a745; color: white; box-shadow: 1px 2px 4px rgba(0,0,0,0.3); margin: 12px 0 12px 0; font-size: 20px}
         button:active { transform: scale(0.98); }
@@ -33,7 +45,7 @@
             <div id="loader">Pobieranie danych...</div>
 
             <div id="results" class="results-container">
-                </div>
+            </div>
         </div>
 
         <button class="btn-pdf" id="pdfBtn" onclick="generatePDF()" disabled>ZAPISZ PDF</button>
@@ -105,39 +117,30 @@
             // Sortujemy pobrane dane od najnowszych
             data.sort((a, b) => parseDate(b.data) - parseDate(a.data));
 
-            let html = `<table>
-                <thead>
-                    <tr>
-                        <th style="text-align: left; padding-left: 5px;">nazwisko</th>
-                        <th>data</th>
-                        <th>rozpoczęcie</th>
-                        <th>zakończenie</th>
-                        <th>czas_pracy</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-            
             const wyswietloneWpisy = new Set();
             let licznikRekordow = 0;
+            let licznikRozpoczetaPraca = 0;
 
-data.forEach(row => {
+            let wierszeHtml = "";
+
+            data.forEach(row => {
                 const dataWpisu = parseDate(row.data);
                 const cPracy = row.czas ? row.czas.trim() : ""; // Pobieramy i oczyszczamy czas pracy
 
-                    // WYJĄTEK: Jeśli praca trwa i czas to "---", NIE pomijaj – przejdź do wyświetlania
-                    if (cPracy !== "---") {
-                        // Zamiana czasu "HH:MM" na minuty dla zakończonych wpisów
-                        const czesci = cPracy.split(':');
-                        let minuty = 0;
-                        if (czesci.length >= 2) {
-                            minuty = (parseInt(czesci[0], 10) || 0) * 60 + (parseInt(czesci[1], 10) || 0);
-                        }
-
-                        // WARUNEK 2: Pomijaj zakończone wpisy krótsze niż 9 minut (w tym 0:00)
-                        if (minuty < 9) {
-                            return;
-                        }
+                // WYJĄTEK: Jeśli praca trwa i czas to "---", NIE pomijaj – przejdź do wyświetlania
+                if (cPracy !== "---") {
+                    // Zamiana czasu "HH:MM" na minuty dla zakończonych wpisów
+                    const czesci = cPracy.split(':');
+                    let minuty = 0;
+                    if (czesci.length >= 2) {
+                        minuty = (parseInt(czesci[0], 10) || 0) * 60 + (parseInt(czesci[1], 10) || 0);
                     }
+
+                    // WARUNEK 2: Pomijaj zakończone wpisy krótsze niż 9 minut (w tym 0:00)
+                    if (minuty < 9) {
+                        return;
+                    }
+                }
                 
                 // FILTR: Przepuszczamy tylko wpisy z wczoraj i dzisiaj
                 if (dataWpisu >= granica2Dni) {
@@ -147,7 +150,12 @@ data.forEach(row => {
                         wyswietloneWpisy.add(kluczDnia);
                         licznikRekordow++;
 
-                        html += `<tr>
+                        // Zliczamy pracowników z czasem pracy "---"
+                        if (cPracy === "---") {
+                            licznikRozpoczetaPraca++;
+                        }
+
+                        wierszeHtml += `<tr>
                             <td style="font-weight: bold; text-align: left; padding-left: 5px;">${row.nazwisko}</td>
                             <td>${row.data}</td>
                             <td>${row.rozpoczecie || '---'}</td>
@@ -158,11 +166,28 @@ data.forEach(row => {
                 }
             });
 
-            html += '</tbody></table>';
-
             if (licznikRekordow === 0) {
                 resultsDiv.innerHTML = '<div class="no-data">Brak wpisów z ostatnich 2 dni.</div>';
             } else {
+                let html = `
+                    <div class="active-counter">
+                        Obecnie w pracy jest <strong>${licznikRozpoczetaPraca}</strong> pracowników
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; padding-left: 5px;">nazwisko</th>
+                                <th>data</th>
+                                <th>rozpoczęcie</th>
+                                <th>zakończenie</th>
+                                <th>czas_pracy</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${wierszeHtml}
+                        </tbody>
+                    </table>`;
+
                 resultsDiv.innerHTML = html;
                 pdfBtn.disabled = false; // Włączamy przycisk PDF tylko gdy są dane
             }
@@ -175,8 +200,7 @@ data.forEach(row => {
         }
     }
 
-    // --- FUNKCJA GENEROWANIA I POBIERANIA PLIKU PDF ---
-// --- POPRAWIONA FUNKCJA GENEROWANIA PLIKU PDF DLA SMARTFONÓW ---
+    // --- POPRAWIONA FUNKCJA GENEROWANIA PLIKU PDF DLA SMARTFONÓW ---
     function generatePDF() {
         const element = document.getElementById('pdf-content');
         const d = new Date();

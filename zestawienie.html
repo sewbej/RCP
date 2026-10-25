@@ -16,6 +16,15 @@
         button:active { transform: scale(0.98); background-color: #1557b0; }
         button:disabled { background-color: #ccc; }
 
+        .lang-btn {
+            width: auto;
+            margin-top: 0;
+            margin-left: 6px;
+            padding: 4px 10px;
+            font-size: 18px;
+            box-shadow: 0 0 1px 1px rgba(0,0,0,0.4);
+        }
+
         #loader { display: none; text-align: center; margin-top: 20px; color: #000; font-weight: bold; }
         
         .results-container { margin-top: 5px; overflow-x: auto; }
@@ -29,36 +38,34 @@
 <body>
 
     <div class="card">
-        <h3>ZESTAWIENIE GODZIN PRACY</h3>
+        <!-- Przełącznik języków -->
+        <div style="display: flex; justify-content: flex-end; gap: 5px; margin-bottom: 8px;">
+            <button onclick="setLanguage('pl')" class="lang-btn" id="btn-pl">PL</button>
+            <button onclick="setLanguage('en')" class="lang-btn" id="btn-en">EN</button>
+            <button onclick="setLanguage('es')" class="lang-btn" id="btn-es">ES</button>
+        </div>
 
+        <h3 id="main-title">ZESTAWIENIE GODZIN PRACY</h3>
 
         <div style="display: flex; gap: 8px;">
             <div style="flex: 1;">
-                <label>Rok</label>
+                <label id="label-year">Rok</label>
                 <input type="number" id="yearInput">
             </div>
             <div style="flex: 2;">
-                <label>Miesiąc</label>
+                <label id="label-month">Miesiąc</label>
                 <select id="monthSelect">
-                    <option value="Styczeń">Styczeń</option><option value="Luty">Luty</option>
-                    <option value="Marzec">Marzec</option><option value="Kwiecień">Kwiecień</option>
-                    <option value="Maj">Maj</option><option value="Czerwiec">Czerwiec</option>
-                    <option value="Lipiec">Lipiec</option><option value="Sierpień">Sierpień</option>
-                    <option value="Wrzesień">Wrzesień</option><option value="Październik">Październik</option>
-                    <option value="Listopad">Listopad</option><option value="Grudzień">Grudzień</option>
                 </select>
             </div>
-
         </div>
 
-<div style="display: flex; gap: 10px; align-items: center; margin-top: 15px; flex-wrap: wrap;">
-    <input type="text" id="nameInput" placeholder="Wpisz imię i nazwisko" style="margin-top: 0; flex: 1; min-width: 150px;">
-<div style="display: flex; gap: 0px; align-items: center; margin-top: 0px; flex-wrap: wrap;">
-<button id="fetchBtn" onclick="getWorkHistory()"style="width: auto; margin-top: 0; padding: 12px 12px; font-size: 16px; white-space: nowrap;">POKAŻ GODZINY</button></div>
-</div>
+        <div style="display: flex; gap: 10px; align-items: center; margin-top: 15px; flex-wrap: wrap;">
+            <input type="text" id="nameInput" placeholder="Wpisz imię i nazwisko" style="margin-top: 0; flex: 1; min-width: 150px;">
+            <div style="display: flex; gap: 0px; align-items: center; margin-top: 0px; flex-wrap: wrap;">
+                <button id="fetchBtn" onclick="getWorkHistory()" style="width: auto; margin-top: 0; padding: 12px 12px; font-size: 16px; white-space: nowrap;">POKAŻ GODZINY</button>
+            </div>
+        </div>
 
-    
-        
         <div id="loader">Pobieranie danych...</div>
 
         <div id="results" class="results-container">
@@ -70,14 +77,105 @@
     // --- TU WKLEJ SWÓJ LINK DO GOOGLE SCRIPT ---
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfA6Ia_OP-gA1t5-COIvBSXN5IKrO3T9nFOQlY3z3zjg7j5iW4cFE9eOKqRILWfok/exec";
 
-    // Ustawienie domyślnego roku i miesiąca na dzisiaj
+    // Słownik tłumaczeń interfejsu
+    const translations = {
+        pl: {
+            title: "ZESTAWIENIE GODZIN PRACY",
+            year: "Rok",
+            month: "Miesiąc",
+            months: ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"],
+            placeholderName: "Wpisz imię i nazwisko",
+            fetchBtn: "POKAŻ GODZINY",
+            loader: "Pobieranie danych...",
+            alertName: "Proszę wpisać nazwisko.",
+            noData: "⚠️ Brak osoby o takim imieniu i nazwisku w wybranym okresie.",
+            thDay: "dzień miesiąca",
+            thStart: "rozpoczęcie",
+            thEnd: "zakończenie",
+            thTime: "czas pracy",
+            totalHours: "SUMA GODZIN:",
+            alertError: "Błąd połączenia. Sprawdź czy urządzenie ma internet i czy GOOGLE_SCRIPT_URL jest poprawny."
+        },
+        en: {
+            title: "WORK HOURS SUMMARY",
+            year: "Year",
+            month: "Month",
+            months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+            placeholderName: "Type full name",
+            fetchBtn: "SHOW HOURS",
+            loader: "Loading data...",
+            alertName: "Please enter your name.",
+            noData: "⚠️ No person with this name found in the selected period.",
+            thDay: "day of month",
+            thStart: "start time",
+            thEnd: "end time",
+            thTime: "work time",
+            totalHours: "TOTAL HOURS:",
+            alertError: "Connection error. Check if the device has internet and if GOOGLE_SCRIPT_URL is correct."
+        },
+        es: {
+            title: "RESUMEN DE HORAS DE TRABAJO",
+            year: "Año",
+            month: "Mes",
+            months: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+            placeholderName: "Escribe nombre y apellido",
+            fetchBtn: "MOSTRAR HORAS",
+            loader: "Cargando datos...",
+            alertName: "Por favor ingresa tu nombre.",
+            noData: "⚠️ No se encontró ninguna persona con este nombre en el período seleccionado.",
+            thDay: "día del mes",
+            thStart: "inicio",
+            thEnd: "fin",
+            thTime: "tiempo de trabajo",
+            totalHours: "TOTAL DE HORAS:",
+            alertError: "Error de conexión. Comprueba si el dispositivo tiene internet y si GOOGLE_SCRIPT_URL es correcto."
+        }
+    };
+
+    const monthValues = ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"];
+    let currentLang = localStorage.getItem('app_lang') || 'pl';
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        localStorage.setItem('app_lang', lang);
+
+        // Podświetlenie aktywnego przycisku języka
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.style.backgroundColor = '#fff';
+            btn.style.color = '#000';
+        });
+        const activeBtn = document.getElementById('btn-' + lang);
+        if(activeBtn) {
+            activeBtn.style.backgroundColor = '#000';
+            activeBtn.style.color = '#fff';
+        }
+
+        const t = translations[lang];
+        document.getElementById('main-title').innerText = t.title;
+        document.getElementById('label-year').innerText = t.year;
+        document.getElementById('label-month').innerText = t.month;
+        document.getElementById('nameInput').placeholder = t.placeholderName;
+        document.getElementById('fetchBtn').innerText = t.fetchBtn;
+        document.getElementById('loader').innerText = t.loader;
+
+        // Aktualizacja nazw miesięcy w liście rozwijanej
+        const monthSelect = document.getElementById('monthSelect');
+        const selectedValue = monthSelect.value || monthValues[now.getMonth()];
+        monthSelect.innerHTML = '';
+        for(let i = 0; i < 12; i++) {
+            const opt = document.createElement('option');
+            opt.value = monthValues[i]; // Wartość wysyłana do backendu Google
+            opt.text = t.months[i];     // Wyświetlana nazwa w wybranym języku
+            monthSelect.appendChild(opt);
+        }
+        monthSelect.value = selectedValue;
+    }
+
     const now = new Date();
-    const monthNames = ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"];
     
-    // Zapobiegamy błędom, jeśli skrypt załaduje się przed elementami DOM
     window.addEventListener('DOMContentLoaded', () => {
         if(document.getElementById('yearInput')) document.getElementById('yearInput').value = now.getFullYear();
-        if(document.getElementById('monthSelect')) document.getElementById('monthSelect').value = monthNames[now.getMonth()];
+        setLanguage(currentLang);
     });
 
     async function getWorkHistory() {
@@ -87,17 +185,14 @@
         const btn = document.getElementById('fetchBtn');
         const loader = document.getElementById('loader');
         const resultsDiv = document.getElementById('results');
+        const t = translations[currentLang];
 
         if (!name) {
-            alert("Proszę wpisać nazwisko.");
+            alert(t.alertName);
             return;
         }
 
-        // INTELLIGENTNE SPRAWDZENIE IDENTYFIKATORA: nowy klucz lub stary jako fallback
         const savedDeviceId = localStorage.getItem('app_device_id') || localStorage.getItem('device_id') || "";
-
-        // Blokada: Brak identyfikatora w pamięci telefonu
-
 
         btn.disabled = true;
         loader.style.display = "block";
@@ -108,7 +203,7 @@
             kod: name,
             miesiac: month,
             rok: year,
-            deviceId: savedDeviceId // Przekazanie klucza autoryzacyjnego do Google Apps Script
+            deviceId: savedDeviceId
         };
 
         try {
@@ -118,7 +213,7 @@
                 body: JSON.stringify(payload)
             });
             
- const data = await response.json();
+            const data = await response.json();
 
             if (data && data.status === "error") {
                 resultsDiv.innerHTML = `<div style="color: red; font-weight: bold; text-align: center; padding: 20px;">${data.message}</div>`;
@@ -126,17 +221,15 @@
                 return;
             }
 
-            // === NOWA LOGIKA: Sprawdzamy, czy baza zwróciła jakiekolwiek rekordy dla tej osoby ===
             if (!data || !Array.isArray(data) || data.length === 0) {
                 resultsDiv.innerHTML = `
                     <div style="color: #d32f2f; font-weight: bold; text-align: center; padding: 30px; border: 1px dashed #d32f2f; border-radius: 8px; margin-top: 20px; font-size: 16px; background-color: #ffebee;">
-                        ⚠️ Brak osoby o takim imieniu i nazwisku w wybranym okresie.
+                        ${t.noData}
                     </div>`;
                 loader.style.display = "none";
-                return; // Przerywamy dalsze wykonywanie kodu, nie budujemy tabeli
+                return;
             }
 
-            // Mapowanie dni (Twoja oryginalna logika - wykona się tylko, gdy dane ISTNIEJĄ)
             const dataMap = {};
             data.forEach(item => {
                 if (!dataMap[item.dzien]) {
@@ -144,22 +237,19 @@
                 }
             });
 
-// Zmienna do przechowywania łącznej liczby minut z całego miesiąca
             let calkowityCzasWMinutach = 0;
 
-            // Budowanie nagłówka tabeli
             let html = `<table>
                 <thead>
                     <tr>
-                        <th style="width: 40px;">dzień miesiąca</th>
-                        <th>rozpoczęcie</th>
-                        <th>zakończenie</th>
-                        <th>czas pracy</th>
+                        <th style="width: 60px;">${t.thDay}</th>
+                        <th>${t.thStart}</th>
+                        <th>${t.thEnd}</th>
+                        <th>${t.thTime}</th>
                     </tr>
                 </thead>
                 <tbody>`;
             
-            // Pętla generująca wiersze dla 31 dni
             for (let d = 1; d <= 31; d++) {
                 if (dataMap[d]) {
                     const czasPracy = dataMap[d].czas ? dataMap[d].czas.trim() : "";
@@ -179,13 +269,10 @@
                             <td>${czasPracy}</td>
                         </tr>`;
 
-                        // --- LOGIKA SUMOWANIA ---
-                        // Rozbijamy czas "GG:MM" na osobne godziny i minuty
                         const częściCzasu = czasPracy.split(':');
                         if (częściCzasu.length >= 2) {
                             const godziny = parseInt(częściCzasu[0], 10) || 0;
                             const minuty = parseInt(częściCzasu[1], 10) || 0;
-                            // Zamieniamy wszystko na minuty i dodajemy do licznika
                             calkowityCzasWMinutach += (godziny * 60) + minuty;
                         }
                     }
@@ -199,45 +286,29 @@
                 }
             }
 
-            // --- KONWERSJA SUMY Z MINUT NA FORMAT GG:MM ---
             const sumaGodzin = Math.floor(calkowityCzasWMinutach / 60);
             const sumaMinut = calkowityCzasWMinutach % 60;
-            // Formatujemy minuty tak, aby zawsze miały dwie cyfry (np. 05 zamiast 5)
             const sformatowaneMinuty = sumaMinut.toString().padStart(2, '0');
             const ostatecznySumaCzasu = `${sumaGodzin}:${sformatowaneMinuty}`;
 
-            // --- DODANIE WIERSZA Z SUMĄ NA KOŃCU TABELI ---
             html += `
                 <tr style="background-color: #fff; font-size: 16px;">
-                    <td colspan="3" style="text-align: right; font-weight: normal; padding: 6px; color: #000;">SUMA GODZIN:</td>
+                    <td colspan="3" style="text-align: right; font-weight: normal; padding: 6px; color: #000;">${t.totalHours}</td>
                     <td style="padding: 6px; color: #000; font-size: 20px;"><strong>${ostatecznySumaCzasu}</strong></td>
                 </tr>`;
 
             html += '</tbody></table>';
             
-            // Wstrzyknięcie gotowej tabeli wraz z sumą do dokumentu HTML
             resultsDiv.innerHTML = html;
             loader.style.display = "none";
 
         } catch (error) {
             console.error(error);
-            alert("Błąd połączenia. Sprawdź czy urządzenie ma internet i czy GOOGLE_SCRIPT_URL jest poprawny.");
+            alert(t.alertError);
         } finally {
             btn.disabled = false;
             loader.style.display = "none";
         }
-    }
-
-    function openEmployeeList() {
-        const month = document.getElementById('monthSelect').value;
-        const year = document.getElementById('yearInput').value;
-        window.open(`lista.html?miesiac=${encodeURIComponent(month)}&rok=${encodeURIComponent(year)}`, '_blank');
-    }
-    
-    function openMonthlyReport() {
-        const month = document.getElementById('monthSelect').value;
-        const year = document.getElementById('yearInput').value;
-        window.open(`raport.html?miesiac=${encodeURIComponent(month)}&rok=${encodeURIComponent(year)}`, '_blank');
     }
 </script>
 </body>

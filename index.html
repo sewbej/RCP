@@ -134,14 +134,14 @@
             if (minutes >= 51) {
                 dateObj.setHours(dateObj.getHours() + 1);
                 dateObj.setMinutes(0, 0, 0);
-            } else if (minutes <= 5) {
+            } else if (minutes <= 9) {
                 dateObj.setMinutes(0, 0, 0);
             }
         } else if (actionType === "zakonczenie") {
             if (minutes >= 55) {
                 dateObj.setHours(dateObj.getHours() + 1);
                 dateObj.setMinutes(0, 0, 0);
-            } else if (minutes <= 9) {
+            } else if (minutes <= 14) {
                 dateObj.setMinutes(0, 0, 0);
             }
         }
